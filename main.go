@@ -36,8 +36,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	//slackbotToken := "xoxb-240194170372-dmBeMtldFCQk29PT1lOVqLfD"
-
 	slackConn := slack.NewSlackServerConn(*slackbotToken)
 
 	glog.V(1).Infoln("Slackbot listening for messages to process...")

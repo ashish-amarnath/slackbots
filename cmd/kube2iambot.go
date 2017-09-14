@@ -44,9 +44,10 @@ func doHTTPRequest(url, apiKey string) (raw []byte, err error) {
 		return nil, err
 	}
 
-	rBody, err := ioutil.ReadAll(resp.Body)
+	raw, err = ioutil.ReadAll(resp.Body)
 	resp.Body.Close()
-	return rBody, nil
+	glog.V(1).Infof("%s\n%s", url, raw)
+	return raw, nil
 }
 
 func getAWSAccountOwnerID(baseURL, apiKey, awsAccNum string) string {

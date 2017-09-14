@@ -42,19 +42,13 @@ type AccNumRespMsg struct {
 // AdSecurityGroupResp represents response from the adSecurityGroupRequest endpoint
 type AdSecurityGroupResp struct {
 	Data []struct {
-		VP              int         `json:"VP"`
-		Name            string      `json:"Name"`
-		Tags            interface{} `json:"Tags"`
-		OrgName         string      `json:"OrgName"`
-		ADSecurityGroup string      `json:"ADSecurityGroup"`
-		CreateDate      time.Time   `json:"CreateDate"`
-		ID              int         `json:"ID"`
-		Director        int         `json:"Director"`
-		Disabled        interface{} `json:"Disabled"`
-		CostCenter      int         `json:"CostCenter"`
-		OnCall          interface{} `json:"OnCall"`
-		EmailDistList   string      `json:"EmailDistList"`
-		UpdateDate      time.Time   `json:"UpdateDate"`
+		Name            string `json:"Name"`
+		OrgName         string `json:"OrgName"`
+		ADSecurityGroup string `json:"ADSecurityGroup"`
+		ID              int    `json:"ID"`
+		Director        int    `json:"Director"`
+		CostCenter      int    `json:"CostCenter"`
+		EmailDistList   string `json:"EmailDistList"`
 	} `json:"data"`
 }
 

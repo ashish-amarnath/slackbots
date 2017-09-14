@@ -16,20 +16,22 @@ func StringifyMessage(msg types.Message) string {
 }
 
 // GetBotType parses message text to extract bot type
-func getBotType(msgText string) string {
+func getBotReqType(msgText string) string {
 	return strings.Split(msgText, " ")[0]
 }
 
 // ProcessBotRquest processes the request based on the request type
-func ProcessBotRquest(msgText, adGroupMemberlistURL, metadataServerURL, metadataServerAPIKey string) string {
-	glog.V(9).Infof("msgTxt: %s\n", msgText)
+func ProcessBotRquest(botReq, adGroupMemberlistURL, metadataServerURL, metadataServerAPIKey string) string {
+	glog.V(9).Infof("msgTxt: %s\n", botReq)
 
-	botType := getBotType(msgText)
+	botReqType := getBotReqType(botReq)
 	var botResp string
-	if botType == types.ValidateKube2IamBotReq {
-		botResp = cmd.ProcessValidateKube2IamReq(adGroupMemberlistURL, metadataServerURL, metadataServerAPIKey, msgText)
-	} else if botType == types.ApplysKube2IamBotReq {
-		botResp = cmd.ApplyKube2IamReq(msgText)
+	if botReqType == types.ValidateKube2IamBotReq {
+		botResp = cmd.ProcessValidateKube2IamReq(adGroupMemberlistURL, metadataServerURL, metadataServerAPIKey, botReq)
+	} else if botReqType == types.ApplysKube2IamBotReq {
+		botResp = cmd.ApplyKube2IamReq(botReq)
+	} else {
+		glog.V(6).Infof("Unknown botReq %s", botReqType)
 	}
 
 	return botResp

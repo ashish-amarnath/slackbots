@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"strings"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -56,7 +57,7 @@ func TestParseAdSecGrpResponse(t *testing.T) {
 			_, err := parseAdSecGrpResponse([]byte(invalidJSON))
 			So(err, ShouldNotBeNil)
 		})
-		Convey("Shoudl parse a valid JSON string into AdSecurityGroupResp", func() {
+		Convey("Should parse a valid JSON string into AdSecurityGroupResp", func() {
 			validJSON := `{"data": [{"Name": "ut", "OrgName": "unit test", "ADSecurityGroup": "unittestAdmins", "ID": 11, "Director": 123, "CostCenter": 12345, "EmailDistList": "unit@test.com"}]}`
 			actual, err := parseAdSecGrpResponse([]byte(validJSON))
 			So(err, ShouldBeNil)
@@ -67,6 +68,26 @@ func TestParseAdSecGrpResponse(t *testing.T) {
 			So(actual.Data[0].ID, ShouldEqual, 11)
 			So(actual.Data[0].Name, ShouldResemble, "ut")
 			So(actual.Data[0].OrgName, ShouldResemble, "unit test")
+		})
+	})
+}
+
+func TestParseADGroupMemberListResp(t *testing.T) {
+	Convey("parseADGroupMemberListResp", t, func() {
+		Convey("Should fail when called with invalid JSON bytes", func() {
+			invalidJSON := `{"name":"codeNinjas","description":"super awesome group","email":"codeninjas`
+			_, err := parseADGroupMemberListResp([]byte(invalidJSON))
+			So(err, ShouldNotBeNil)
+		})
+		Convey("Should parse a valid JSON string into ADGroupMemberListResp", func() {
+			validJSON := `{"name":"codeNinjas","description":"super awesome group","email":"codeninjas@ninjaing.com","type":"unittest","updated":"2017-08-28T17:24:46.000Z","members":{"groups":[],"users":["ninja1","ninja2","ninja3","ninja4","ninja5"]},"managedBy":{"group":null,"user":"ninjaLeader"},"groups":["Ninja-Team1","Ninja-Team2","Ninja-Team3"]}`
+			actual, err := parseADGroupMemberListResp([]byte(validJSON))
+			So(err, ShouldBeNil)
+			So(actual.Description, ShouldResemble, "super awesome group")
+			So(actual.Name, ShouldResemble, "codeNinjas")
+			So(actual.Email, ShouldResemble, "codeninjas@ninjaing.com")
+			So(actual.Type, ShouldResemble, "unittest")
+			So(strings.Join(actual.Members.Users, ","), ShouldResemble, "ninja1,ninja2,ninja3,ninja4,ninja5")
 		})
 	})
 }

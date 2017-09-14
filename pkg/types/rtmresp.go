@@ -1,7 +1,5 @@
 package types
 
-import "time"
-
 // ResponseRtmStart represents rtm start message
 type ResponseRtmStart struct {
 	Ok    bool   `json:"ok"`
@@ -54,14 +52,10 @@ type AdSecurityGroupResp struct {
 
 // ADGroupMemberListResp represents response from looking up members of an AD group
 type ADGroupMemberListResp struct {
-	Dn          string      `json:"dn"`
-	Name        string      `json:"name"`
-	Description string      `json:"description"`
-	Info        interface{} `json:"info"`
-	Email       string      `json:"email"`
-	Type        string      `json:"type"`
-	Created     time.Time   `json:"created"`
-	Updated     time.Time   `json:"updated"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Email       string `json:"email"`
+	Type        string `json:"type"`
 	Members     struct {
 		Groups []interface{} `json:"groups"`
 		Users  []string      `json:"users"`

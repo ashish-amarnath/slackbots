@@ -46,7 +46,6 @@ func doHTTPRequest(url, apiKey string) (raw []byte, err error) {
 
 	raw, err = ioutil.ReadAll(resp.Body)
 	resp.Body.Close()
-	glog.V(1).Infof("%s\n%s", url, raw)
 	return raw, nil
 }
 
@@ -102,6 +101,7 @@ func getAdGrpMembers(adGroupMemberlistURL, adSecGrp string) string {
 		glog.Errorf("failed to successfully run [%s] err=%s", curlCmd, err)
 		return err.Error()
 	}
+	glog.V(1).Infof("%s\n", out)
 	adGrpMemberListResp, err := parseADGroupMemberListResp(out)
 	return strings.Join(adGrpMemberListResp.Members.Users, ", ")
 }

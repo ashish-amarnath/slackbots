@@ -101,7 +101,6 @@ func getAdGrpMembers(adGroupMemberlistURL, adSecGrp string) string {
 		glog.Errorf("failed to successfully run [%s] err=%s", curlCmd, err)
 		return err.Error()
 	}
-	glog.V(1).Infof("%s\n", out)
 	adGrpMemberListResp, err := parseADGroupMemberListResp(out)
 	return strings.Join(adGrpMemberListResp.Members.Users, ", ")
 }

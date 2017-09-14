@@ -1,13 +1,48 @@
 package utils
 
 import (
+	"bytes"
 	"fmt"
+	"os/exec"
 	"strings"
 
 	"github.com/ashish-amarnath/slackbots/cmd"
 	"github.com/ashish-amarnath/slackbots/pkg/types"
 	"github.com/golang/glog"
 )
+
+func whichKubectl() (loc string, err error) {
+	loc, err = RunBashCmd(types.WhichKubectl)
+	return
+}
+
+// RunBashCmd runs a supplied bash command
+func RunBashCmd(cmd string) (res string, err error) {
+	toRun := exec.Command("bash", "-c", cmd)
+	var stderr bytes.Buffer
+	toRun.Stderr = &stderr
+	out, err := toRun.Output()
+	if err != nil {
+		glog.Infof("stderr: %s", stderr.String())
+	}
+	res = string(out)
+	return
+}
+
+func getKubeCtlBaseCmd(kubeconfigPath, cluster string) (baseCmd string, err error) {
+	var kcLoc string
+	kcLoc, err = whichKubectl()
+	baseCmd = fmt.Sprintf("%s --user %s_sudo --context=%s", kcLoc, cluster, cluster)
+	return
+}
+
+func getNamespaceDefnJSON(configPath, cluster, namespace string) (json string, err error) {
+	var kcBaseCmd string
+	kcBaseCmd, err = getKubeCtlBaseCmd(configPath, cluster)
+	bashCmd := fmt.Sprintf(" get namespace %s --export=true -oyaml", namespace)
+	json, err = RunBashCmd(kcBaseCmd + bashCmd)
+	return
+}
 
 // StringifyMessage returns a string representation of a message
 func StringifyMessage(msg types.Message) string {

@@ -53,7 +53,7 @@ func main() {
 		botResp := utils.ProcessBotRquest(msg.Text, *adGroupMemberLookupURL, *awsMetadataServerURL, *awsMetadataServerAPIKey)
 		glog.V(4).Infof("Bot response=%s", botResp)
 		msg.Text = botResp
-		glog.V(4).Infoln(utils.StringifyMessage(msg))
+		glog.V(8).Infoln(utils.StringifyMessage(msg))
 		slackConn.SendMessage(msg)
 	}
 }

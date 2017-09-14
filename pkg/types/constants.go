@@ -9,4 +9,5 @@ const (
 	AWSMetaDataServerAccRsrcEp  = "dev_read/accounts?AccountNumber"
 	ADSecurityGroupEndPoint     = "dev_read/teams?ID"
 	AccountNumberIndexInRoleArn = 4
+	WhichKubectl                = "which kubectl"
 )

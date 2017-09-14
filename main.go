@@ -15,7 +15,7 @@ var (
 	helpFlag                *bool
 	awsMetadataServerAPIKey *string
 	awsMetadataServerURL    *string
-	validateScriptPath      *string
+	adGroupMemberLookupURL  *string
 	slackbotToken           *string
 )
 
@@ -27,7 +27,7 @@ func main() {
 	helpFlag = flag.Bool("help", false, "")
 	awsMetadataServerAPIKey = flag.String("apikey", "", "API key to use to engage AWS meta-data service")
 	awsMetadataServerURL = flag.String("metadataServerURL", "", "URL for AWS metadata server to get account info")
-	validateScriptPath = flag.String("validateScriptPath", "", "Path to the script that prints owners of AWS account.")
+	adGroupMemberLookupURL = flag.String("adgrouplookupurl", "", "URL for the AD group member list service.")
 	slackbotToken = flag.String("slackbotToken", "", "Slack generated token for the bot")
 	flag.Parse()
 
@@ -45,10 +45,12 @@ func main() {
 			glog.Fatalf("Failed to read message sent to slackbot. err=%s\n", err)
 		}
 		if msg.Type != types.MessageType {
+			glog.V(9).Infof("Ignoring messages of type %s\n", msg.Type)
 			continue
 		}
-		glog.V(4).Infoln(utils.StringifyMessage(msg))
-		botResp := utils.ProcessBotRquest(msg.Text, *awsMetadataServerURL, *awsMetadataServerAPIKey)
+
+		glog.V(10).Infof("Processing message [%s]\n", utils.StringifyMessage(msg))
+		botResp := utils.ProcessBotRquest(msg.Text, *adGroupMemberLookupURL, *awsMetadataServerURL, *awsMetadataServerAPIKey)
 		glog.V(4).Infof("Bot response=%s", botResp)
 		msg.Text = botResp
 		glog.V(4).Infoln(utils.StringifyMessage(msg))

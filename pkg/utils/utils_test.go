@@ -15,13 +15,14 @@ func TestStringifyMessage(t *testing.T) {
 			testMsg.ID = 12
 			testMsg.Text = "unit test message"
 			testMsg.Type = "message"
-			expectedString := "[ID=12, Type=message, Text=unit test message, Channel=utchannel]"
+			testMsg.User = "unit-tester"
+			expectedString := "[ID=12, Type=message, Text=unit test message, Channel=utchannel, User=unit-tester]"
 			actualString := StringifyMessage(testMsg)
 			So(actualString, ShouldEqual, expectedString)
 		})
 		Convey("Should use default values", func() {
 			var testMsg types.Message
-			expectedString := "[ID=0, Type=, Text=, Channel=]"
+			expectedString := "[ID=0, Type=, Text=, Channel=, User=]"
 			actualString := StringifyMessage(testMsg)
 			So(actualString, ShouldEqual, expectedString)
 		})

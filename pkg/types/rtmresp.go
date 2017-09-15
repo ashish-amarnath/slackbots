@@ -66,3 +66,21 @@ type ADGroupMemberListResp struct {
 	} `json:"managedBy"`
 	Groups []string `json:"groups"`
 }
+
+// KubernetesNamespaceMetadata represents k8s namespace metadata
+type KubernetesNamespaceMetadata struct {
+	APIVersion string `json:"apiVersion"`
+	Kind       string `json:"kind"`
+	Metadata   struct {
+		Annotations struct {
+			ContactEmail                                string `json:"contact-email"`
+			CostCenter                                  string `json:"cost-center"`
+			Kube2IamBetaNordstromNetAllowedRoles        string `json:"kube2iam.beta.nordstrom.net/allowed-roles"`
+			KubectlKubernetesIoLastAppliedConfiguration string `json:"kubectl.kubernetes.io/last-applied-configuration"`
+			KubernetesIoChangeCause                     string `json:"kubernetes.io/change-cause"`
+			SlackChannelEvents                          string `json:"slack-channel-events"`
+			SlackChannelUrgent                          string `json:"slack-channel-urgent"`
+			SlackChannelUsers                           string `json:"slack-channel-users"`
+		} `json:"annotations"`
+	}
+}

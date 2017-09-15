@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/ashish-amarnath/slackbots/pkg/types"
+	"github.com/ashish-amarnath/slackbots/pkg/utils"
 	"github.com/golang/glog"
 )
 
@@ -48,7 +49,11 @@ func doHTTPRequest(url, apiKey string) (raw []byte, err error) {
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil || resp.StatusCode != 200 {
-		err := fmt.Errorf("request to url=%s failed err=%s, httpStatusCode=%d(%s)", url, err, resp.StatusCode, resp.Status)
+		if resp == nil {
+			err = fmt.Errorf("request to url=%s failed err=%s", url, err)
+		} else {
+			err = fmt.Errorf("request to url=%s failed err=%s, httpStatusCode=%d(%s)", url, err, resp.StatusCode, resp.Status)
+		}
 		glog.Error(err)
 		return nil, err
 	}
@@ -118,18 +123,20 @@ func getAdGrpMembers(adGroupMemberlistURL, adSecGrp string) string {
 	return strings.Join(adGrpMemberListResp.Members.Users, ", ")
 }
 
-// ProcessValidateKube2IamReq validates kube2iam request
-func ProcessValidateKube2IamReq(adGrpListURL, mdsURL, mdsAPIKey, msg string) string {
+// ValidateKube2IamReq validates kube2iam request
+func ValidateKube2IamReq(adGrpListURL, mdsURL, mdsAPIKey, msg string) string {
 	msgParts := strings.Split(msg, " ")
-	usage := fmt.Sprintf("ERROR:\n Request should be of the form ```%s <namespace> <roleArn>``` Order is important. Received ```%s```", types.ValidateKube2IamBotReq, msg)
+	usage := fmt.Sprintf("ERROR:\n Request should be of the form ```%s <namespace> <roleArn> <cluster>``` Order is important. Received ```%s```", types.ValidateKube2IamBotReq, msg)
 	var resp string
 
-	if len(msgParts) != 3 {
+	//TODO remove magic numbers
+	if len(msgParts) != 4 {
 		return usage
 	}
 
 	namespace := msgParts[1]
 	awsRoleArn := msgParts[2]
+	cluster := msgParts[3]
 
 	awsAccountNumber, err := getAccNumFromRoleArn(awsRoleArn)
 	if err != nil {
@@ -141,20 +148,27 @@ func ProcessValidateKube2IamReq(adGrpListURL, mdsURL, mdsAPIKey, msg string) str
 		return fmt.Sprintf("err:%s\n %s\n", err.Error(), usage)
 	}
 	adSecGrp := getOwnerADSecurityGroup(mdsURL, mdsAPIKey, roleAccOwnerID)
-	nextStep := fmt.Sprintf("K8s admin copy paste \n ```%s %s %s``` \n OR \n ```%s %s %s```\n as appropriate",
-		types.ApplysKube2IamBotReq, namespace, awsRoleArn, types.RejectKube2IamBotReq, namespace, awsRoleArn)
+	nextStep := fmt.Sprintf("K8s admin copy paste \n ```%s %s %s %s``` \n OR \n ```%s %s %s```\n as appropriate",
+		types.ApplysKube2IamBotReq, namespace, awsRoleArn, cluster, types.RejectKube2IamBotReq, namespace, awsRoleArn)
 	resp = fmt.Sprintf("Owners of ARN [%s] are [%s]\n %s", awsRoleArn, getAdGrpMembers(adGrpListURL, adSecGrp), nextStep)
 	return resp
 }
 
 // ApplyKube2IamReq applies kube2iam annotations to namespaces
-func ApplyKube2IamReq(msgText, kubeconfig, cluster string) string {
+func ApplyKube2IamReq(msgText, kubeconfig string) string {
 	msgTxtArr := strings.Split(msgText, " ")
+	var resp string
 	namespace := msgTxtArr[1]
 	awsRoleArn := msgTxtArr[2]
+	cluster := msgTxtArr[3]
 
-	resp := fmt.Sprintf("Allowing pods in namespace=%s to assume role=%s in cluster=%s, kubeconfig=%s", namespace, awsRoleArn, cluster, kubeconfig)
-	glog.V(1).Infof(resp)
+	nsJSON, err := utils.GetNamespaceDefnJSON(kubeconfig, cluster, namespace)
+	if err != nil {
+		resp = fmt.Sprintf("Failed to get namespace definition for namepsace=%s in cluster=%s. err=%s", namespace, cluster, err.Error())
+	} else {
+		glog.V(1).Infof("namespace definition for %s\n%s\n", namespace, nsJSON)
+		resp = fmt.Sprintf("Allowing pods in namespace=%s to assume role=%s in cluster=%s, kubeconfig=%s", namespace, awsRoleArn, cluster, kubeconfig)
+	}
 
 	return resp
 }
@@ -163,4 +177,23 @@ func ApplyKube2IamReq(msgText, kubeconfig, cluster string) string {
 func RejectKube2IamReq(msgText string) string {
 	// TODO: notify requester about rejection
 	return fmt.Sprintf("Go get a human to help out... NOW!!!")
+}
+
+// ProcessBotRquest processes the request based on the request type
+func ProcessBotRquest(botReq, adLookupServerURL, metadataServerURL, metadataServerAPIKey, kubeconfig string) string {
+	glog.V(9).Infof("msgTxt: %s\n", botReq)
+
+	botReqType := utils.GetBotReqType(botReq)
+	var botResp string
+	if botReqType == types.ValidateKube2IamBotReq {
+		botResp = ValidateKube2IamReq(adLookupServerURL, metadataServerURL, metadataServerAPIKey, botReq)
+	} else if botReqType == types.ApplysKube2IamBotReq {
+		botResp = ApplyKube2IamReq(botReq, kubeconfig)
+	} else if botReqType == types.RejectKube2IamBotReq {
+		botResp = RejectKube2IamReq(botReq)
+	} else {
+		glog.V(6).Infof("Unknown botReq %s", botReqType)
+	}
+
+	return botResp
 }

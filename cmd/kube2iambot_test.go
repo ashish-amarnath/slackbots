@@ -4,15 +4,34 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/golang/glog"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestGetAccNumFromRoleArn(t *testing.T) {
-	Convey("getAccNumFromRoleArn should parse out account number from a valid AWS role ARN", t, func() {
-		testRoleArn := "arn:aws:iam::123456789012:role/foo/bar/foo-bar-mysuperawesomerole"
-		expected := "123456789012"
-		actual := getAccNumFromRoleArn(testRoleArn)
-		So(actual, ShouldResemble, expected)
+	Convey("getAccNumFromRoleArn", t, func() {
+		Convey("should parse out account number from a valid AWS role ARN", func() {
+			testRoleArn := "arn:aws:iam::123456789012:role/foo/bar/foo-bar-mysuperawesomerole"
+			expected := "123456789012"
+			actual, err := getAccNumFromRoleArn(testRoleArn)
+			So(err, ShouldBeNil)
+			So(actual, ShouldResemble, expected)
+		})
+		Convey("should report error when called with invalid role ARN", func() {
+			invalidRoleArn := "arn-aws-iam--123456789012-role/foo/bar/foo-bar-mysuperawesomerole"
+			actual, err := getAccNumFromRoleArn(invalidRoleArn)
+			So(actual, ShouldBeEmpty)
+			So(err, ShouldNotBeNil)
+		})
+	})
+}
+
+func TestGetAWSAccountOwnerID(t *testing.T) {
+	Convey("getAWSAccountOwnerID should return error when unable to process request sucessfully", t, func() {
+		glog.Errorf("Expected Error:\n")
+		actual, err := getAWSAccountOwnerID("https://example.com", "open-key", "123456789012")
+		So(actual, ShouldBeEmpty)
+		So(err, ShouldNotBeNil)
 	})
 }
 

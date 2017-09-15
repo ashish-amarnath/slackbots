@@ -6,7 +6,6 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/ashish-amarnath/slackbots/cmd"
 	"github.com/ashish-amarnath/slackbots/pkg/types"
 	"github.com/golang/glog"
 )
@@ -18,6 +17,7 @@ func whichKubectl() (loc string, err error) {
 
 // RunBashCmd runs a supplied bash command
 func RunBashCmd(cmd string) (res string, err error) {
+	glog.V(8).Infof("Running [%s]\n", cmd)
 	toRun := exec.Command("bash", "-c", cmd)
 	var stderr bytes.Buffer
 	toRun.Stderr = &stderr
@@ -25,7 +25,7 @@ func RunBashCmd(cmd string) (res string, err error) {
 	if err != nil {
 		glog.Infof("stderr: %s", stderr.String())
 	}
-	res = string(out)
+	res = strings.TrimSpace(string(out))
 	return
 }
 
@@ -36,7 +36,8 @@ func getKubeCtlBaseCmd(kubeconfig, cluster string) (baseCmd string, err error) {
 	return
 }
 
-func getNamespaceDefnJSON(kubeConfig, cluster, namespace string) (json string, err error) {
+// GetNamespaceDefnJSON fetches the current namespace definition in JSON format
+func GetNamespaceDefnJSON(kubeConfig, cluster, namespace string) (json string, err error) {
 	var kcBaseCmd string
 	kcBaseCmd, err = getKubeCtlBaseCmd(kubeConfig, cluster)
 	bashCmd := fmt.Sprintf(" get namespace %s --export=true -ojson", namespace)
@@ -50,26 +51,7 @@ func StringifyMessage(msg types.Message) string {
 		msg.ID, msg.Type, msg.Text, msg.Channel, msg.User)
 }
 
-// GetBotType parses message text to extract bot type
-func getBotReqType(msgText string) string {
+// GetBotReqType parses message text to extract bot type
+func GetBotReqType(msgText string) string {
 	return strings.Split(msgText, " ")[0]
-}
-
-// ProcessBotRquest processes the request based on the request type
-func ProcessBotRquest(botReq, adLookupServerURL, metadataServerURL, metadataServerAPIKey, kubeconfig, cluster string) string {
-	glog.V(9).Infof("msgTxt: %s\n", botReq)
-
-	botReqType := getBotReqType(botReq)
-	var botResp string
-	if botReqType == types.ValidateKube2IamBotReq {
-		botResp = cmd.ProcessValidateKube2IamReq(adLookupServerURL, metadataServerURL, metadataServerAPIKey, botReq)
-	} else if botReqType == types.ApplysKube2IamBotReq {
-		botResp = cmd.ApplyKube2IamReq(botReq, kubeconfig, cluster)
-	} else if botReqType == types.RejectKube2IamBotReq {
-		botResp = cmd.RejectKube2IamReq(botReq)
-	} else {
-		glog.V(6).Infof("Unknown botReq %s", botReqType)
-	}
-
-	return botResp
 }

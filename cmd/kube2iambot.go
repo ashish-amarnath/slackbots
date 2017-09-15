@@ -12,9 +12,18 @@ import (
 	"github.com/golang/glog"
 )
 
-func getAccNumFromRoleArn(arnName string) string {
+func getAccNumFromRoleArn(arnName string) (accNum string, err error) {
+	err = nil
+	accNum = ""
 	roleArnParts := strings.Split(arnName, ":")
-	return roleArnParts[types.AccountNumberIndexInRoleArn]
+	if len(roleArnParts) != 6 {
+		err = fmt.Errorf("%s doesn't ressemble an AWS IAM role arn", arnName)
+		accNum = ""
+	} else {
+		accNum = roleArnParts[types.AccountNumberIndexInRoleArn]
+		err = nil
+	}
+	return
 }
 
 func getAccountOwnerIDEndpoint(metadataServerURL, accNum string) string {
@@ -49,18 +58,22 @@ func doHTTPRequest(url, apiKey string) (raw []byte, err error) {
 	return raw, nil
 }
 
-func getAWSAccountOwnerID(baseURL, apiKey, awsAccNum string) string {
+func getAWSAccountOwnerID(baseURL, apiKey, awsAccNum string) (ownerID string, err error) {
 	url := getAccountOwnerIDEndpoint(baseURL, awsAccNum)
+	ownerID = ""
+	err = nil
 
 	rBody, err := doHTTPRequest(url, apiKey)
 	respJSON, err := parseAccOwnerResponse(rBody)
 	if err != nil {
-		err := fmt.Errorf("doHttpRequest to getAWSAccountOwnerID url=%s failed, err=%s", url, err)
+		err = fmt.Errorf("doHttpRequest to getAWSAccountOwnerID url=%s failed, err=%s", url, err)
 		glog.Error(err)
-		return err.Error()
+		ownerID = ""
+	} else {
+		err = nil
+		ownerID = fmt.Sprintf("%d", respJSON.Data[0].OwnerTeamID)
 	}
-
-	return fmt.Sprintf("%d", respJSON.Data[0].OwnerTeamID)
+	return
 }
 
 func parseAdSecGrpResponse(raw []byte) (respObj types.AdSecurityGroupResp, err error) {
@@ -108,22 +121,46 @@ func getAdGrpMembers(adGroupMemberlistURL, adSecGrp string) string {
 // ProcessValidateKube2IamReq validates kube2iam request
 func ProcessValidateKube2IamReq(adGrpListURL, mdsURL, mdsAPIKey, msg string) string {
 	msgParts := strings.Split(msg, " ")
-	awsRoleArn := msgParts[1]
+	usage := fmt.Sprintf("ERROR:\n Request should be of the form ```%s <namespace> <roleArn>``` Order is important. Received ```%s```", types.ValidateKube2IamBotReq, msg)
+	var resp string
 
-	awsAccountNumber := getAccNumFromRoleArn(awsRoleArn)
-	roleAccOwnerID := getAWSAccountOwnerID(mdsURL, mdsAPIKey, awsAccountNumber)
+	if len(msgParts) != 3 {
+		return usage
+	}
+
+	namespace := msgParts[1]
+	awsRoleArn := msgParts[2]
+
+	awsAccountNumber, err := getAccNumFromRoleArn(awsRoleArn)
+	if err != nil {
+		return fmt.Sprintf("err:%s\n %s\n", err.Error(), usage)
+	}
+
+	roleAccOwnerID, err := getAWSAccountOwnerID(mdsURL, mdsAPIKey, awsAccountNumber)
+	if err != nil {
+		return fmt.Sprintf("err:%s\n %s\n", err.Error(), usage)
+	}
 	adSecGrp := getOwnerADSecurityGroup(mdsURL, mdsAPIKey, roleAccOwnerID)
-	return getAdGrpMembers(adGrpListURL, adSecGrp)
+	nextStep := fmt.Sprintf("K8s admin copy paste \n ```%s %s %s``` \n OR \n ```%s %s %s```\n as appropriate",
+		types.ApplysKube2IamBotReq, namespace, awsRoleArn, types.RejectKube2IamBotReq, namespace, awsRoleArn)
+	resp = fmt.Sprintf("Owners of ARN [%s] are [%s]\n %s", awsRoleArn, getAdGrpMembers(adGrpListURL, adSecGrp), nextStep)
+	return resp
 }
 
 // ApplyKube2IamReq applies kube2iam annotations to namespaces
-func ApplyKube2IamReq(msgText string) string {
+func ApplyKube2IamReq(msgText, kubeconfig, cluster string) string {
 	msgTxtArr := strings.Split(msgText, " ")
 	namespace := msgTxtArr[1]
 	awsRoleArn := msgTxtArr[2]
 
-	resp := fmt.Sprintf("Allowing pods in namespace=%s to assume role=%s", namespace, awsRoleArn)
+	resp := fmt.Sprintf("Allowing pods in namespace=%s to assume role=%s in cluster=%s, kubeconfig=%s", namespace, awsRoleArn, cluster, kubeconfig)
 	glog.V(1).Infof(resp)
 
 	return resp
+}
+
+// RejectKube2IamReq should get human intervention to process this request
+func RejectKube2IamReq(msgText string) string {
+	// TODO: notify requester about rejection
+	return fmt.Sprintf("Go get a human to help out... NOW!!!")
 }

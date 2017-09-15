@@ -29,17 +29,17 @@ func RunBashCmd(cmd string) (res string, err error) {
 	return
 }
 
-func getKubeCtlBaseCmd(kubeconfigPath, cluster string) (baseCmd string, err error) {
+func getKubeCtlBaseCmd(kubeconfig, cluster string) (baseCmd string, err error) {
 	var kcLoc string
 	kcLoc, err = whichKubectl()
-	baseCmd = fmt.Sprintf("%s --user %s_sudo --context=%s", kcLoc, cluster, cluster)
+	baseCmd = fmt.Sprintf("%s --user %s_sudo --context=%s --kubeconfig=%s", kcLoc, cluster, cluster, kubeconfig)
 	return
 }
 
-func getNamespaceDefnJSON(configPath, cluster, namespace string) (json string, err error) {
+func getNamespaceDefnJSON(kubeConfig, cluster, namespace string) (json string, err error) {
 	var kcBaseCmd string
-	kcBaseCmd, err = getKubeCtlBaseCmd(configPath, cluster)
-	bashCmd := fmt.Sprintf(" get namespace %s --export=true -oyaml", namespace)
+	kcBaseCmd, err = getKubeCtlBaseCmd(kubeConfig, cluster)
+	bashCmd := fmt.Sprintf(" get namespace %s --export=true -ojson", namespace)
 	json, err = RunBashCmd(kcBaseCmd + bashCmd)
 	return
 }
@@ -56,15 +56,17 @@ func getBotReqType(msgText string) string {
 }
 
 // ProcessBotRquest processes the request based on the request type
-func ProcessBotRquest(botReq, adGroupMemberlistURL, metadataServerURL, metadataServerAPIKey string) string {
+func ProcessBotRquest(botReq, adLookupServerURL, metadataServerURL, metadataServerAPIKey, kubeconfig, cluster string) string {
 	glog.V(9).Infof("msgTxt: %s\n", botReq)
 
 	botReqType := getBotReqType(botReq)
 	var botResp string
 	if botReqType == types.ValidateKube2IamBotReq {
-		botResp = cmd.ProcessValidateKube2IamReq(adGroupMemberlistURL, metadataServerURL, metadataServerAPIKey, botReq)
+		botResp = cmd.ProcessValidateKube2IamReq(adLookupServerURL, metadataServerURL, metadataServerAPIKey, botReq)
 	} else if botReqType == types.ApplysKube2IamBotReq {
-		botResp = cmd.ApplyKube2IamReq(botReq)
+		botResp = cmd.ApplyKube2IamReq(botReq, kubeconfig, cluster)
+	} else if botReqType == types.RejectKube2IamBotReq {
+		botResp = cmd.RejectKube2IamReq(botReq)
 	} else {
 		glog.V(6).Infof("Unknown botReq %s", botReqType)
 	}

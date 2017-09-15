@@ -17,6 +17,8 @@ var (
 	awsMetadataServerURL    *string
 	adGroupMemberLookupURL  *string
 	slackbotToken           *string
+	kubeconfig              *string
+	cluster                 *string
 )
 
 func printUsage() {
@@ -29,6 +31,8 @@ func main() {
 	awsMetadataServerURL = flag.String("metadataServerURL", "", "URL for AWS metadata server to get account info")
 	adGroupMemberLookupURL = flag.String("adgrouplookupurl", "", "URL for the AD group member list service.")
 	slackbotToken = flag.String("slackbotToken", "", "Slack generated token for the bot")
+	kubeconfig = flag.String("kubeconfig", "", "Path to the kubeconfig for kubectl to use")
+	cluster = flag.String("cluster", "", "kubernetes cluster where the namespace is to be updated")
 	flag.Parse()
 
 	if *helpFlag {
@@ -50,7 +54,7 @@ func main() {
 		}
 
 		glog.V(10).Infof("Processing message [%s]\n", utils.StringifyMessage(msg))
-		botResp := utils.ProcessBotRquest(msg.Text, *adGroupMemberLookupURL, *awsMetadataServerURL, *awsMetadataServerAPIKey)
+		botResp := utils.ProcessBotRquest(msg.Text, *adGroupMemberLookupURL, *awsMetadataServerURL, *awsMetadataServerAPIKey, *kubeconfig, *cluster)
 		glog.V(4).Infof("Bot response=%s", botResp)
 		msg.Text = botResp
 		glog.V(8).Infoln(utils.StringifyMessage(msg))

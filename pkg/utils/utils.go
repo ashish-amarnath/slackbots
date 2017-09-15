@@ -23,6 +23,7 @@ func RunBashCmd(cmd string) (res string, err error) {
 	toRun.Stderr = &stderr
 	out, err := toRun.Output()
 	if err != nil {
+		res = ""
 		glog.Infof("stderr: %s", stderr.String())
 	}
 	res = strings.TrimSpace(string(out))
@@ -33,6 +34,14 @@ func getKubeCtlBaseCmd(kubeconfig, cluster string) (baseCmd string, err error) {
 	var kcLoc string
 	kcLoc, err = whichKubectl()
 	baseCmd = fmt.Sprintf("%s --user %s_sudo --context=%s --kubeconfig=%s", kcLoc, cluster, cluster, kubeconfig)
+	return
+}
+
+// ApplyUpdatedNamespaceMetadata applies the supplied namespace metadata to the supplied namespace in the supplied cluster
+func ApplyUpdatedNamespaceMetadata(kubeConfig, cluster, metadataJSON string) (err error) {
+	kcBaseCmd, err := getKubeCtlBaseCmd(kubeConfig, cluster)
+	applyCmd := fmt.Sprintf("%s | %s apply -f", metadataJSON, kcBaseCmd)
+	_, err = RunBashCmd(applyCmd)
 	return
 }
 

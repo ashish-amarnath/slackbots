@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ashish-amarnath/slackbots/pkg/types"
 	"github.com/golang/glog"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -107,6 +108,63 @@ func TestParseADGroupMemberListResp(t *testing.T) {
 			So(actual.Email, ShouldResemble, "codeninjas@ninjaing.com")
 			So(actual.Type, ShouldResemble, "unittest")
 			So(strings.Join(actual.Members.Users, ","), ShouldResemble, "ninja1,ninja2,ninja3,ninja4,ninja5")
+		})
+	})
+}
+
+func TestParseKubernetesNamespaceMetadata(t *testing.T) {
+	Convey("parseKubernetesNamespaceMetadata", t, func() {
+		Convey("Should fail when invoeked with invalid JSIN bytes", func() {
+			invalidJSON := `{
+				"apiVersion": "v1",
+				"kind": "Namespace",
+				"metadata": {
+				  "annotations": {
+					"contact-email": "techdsbiadtlkdvops@nordstrom.com",
+					"cost-center": "",
+					"kube2iam.beta.nordstrom.net/allowed-roles": "[\"arn:aws:iam::640598048906:role/cdp/k8s/CDPS3AndKmsStack-CDPFlinkForS3AndKMS-9336B1OLABTR\",\"arn:aws:iam::004323233598:role/cdp/k8s/cdpk8sservicerolestack-CDPK8sServiceRole-18FNPU97BUDBN\",\"arn:aws:iam::640598048906:role/NonProd_DSBIA/k8s/NonProd_DSBIA-s3-schema-access\",\"arn:aws:iam::500238854089:role/a0036/k8s/a0036-cdp-v1-flink-s3-Role\"]\n",
+					"kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"v1\",\"kind\":\"Namespace\",\"metadata\":{\"annotations\":{\"contact-email\":\"techdsbiadtlkdvops@nordstrom.com\",\"cost-center\":\"\",\"kube2iam.beta.nordstrom.net/allowed-roles\":\"[\\\"arn:aws:iam::640598048906:role/cdp/k8s/CDPS3AndKmsStack-CDPFlinkForS3AndKMS-9336B1OLABTR\\\"]\\n\",\"kubernetes.io/change-cause\":\"kubectl edit ns cdp --user=athens_sudo\",\"slack-channel-events\":\"\",\"slack-channel-urgent\":\"\",\"slack-channel-users\":\"#cdp\"},\"creationTimestamp\":null,\"name\":\"cdp\",\"namespace\":\"\",\"selfLink\":\"/api/v1/namespacescdp\"},\"spec\":{\"finalizers\":[\"kubernetes\"]},\"status\":{\"phase\":\"Active\"}}\n",
+					"kubernetes.io/change-cause": "kubectl edit ns cdp --context=steel --user=steel_sudo"
+			  }`
+			_, err := parseKubernetesNamespaceMetadata([]byte(invalidJSON))
+			So(err, ShouldNotBeNil)
+		})
+		Convey("Should parse a valid JSON string into KubernetesNamespaceMetadata", func() {
+			validJSON := `{
+				"apiVersion": "v1",
+				"kind": "Namespace",
+				"metadata": {
+				  "annotations": {
+					"contact-email": "unit@test.com",
+					"cost-center": "",
+					"kube2iam.beta.nordstrom.net/allowed-roles": "[\"arn:aws:iam::640598048906:role/cdp/k8s/CDPS3AndKmsStack-CDPFlinkForS3AndKMS-9336B1OLABTR\",\"arn:aws:iam::004323233598:role/cdp/k8s/cdpk8sservicerolestack-CDPK8sServiceRole-18FNPU97BUDBN\",\"arn:aws:iam::640598048906:role/NonProd_DSBIA/k8s/NonProd_DSBIA-s3-schema-access\",\"arn:aws:iam::500238854089:role/a0036/k8s/a0036-cdp-v1-flink-s3-Role\"]\n",
+					"kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"v1\",\"kind\":\"Namespace\",\"metadata\":{\"annotations\":{\"contact-email\":\"techdsbiadtlkdvops@nordstrom.com\",\"cost-center\":\"\",\"kube2iam.beta.nordstrom.net/allowed-roles\":\"[\\\"arn:aws:iam::640598048906:role/cdp/k8s/CDPS3AndKmsStack-CDPFlinkForS3AndKMS-9336B1OLABTR\\\"]\\n\",\"kubernetes.io/change-cause\":\"kubectl edit ns cdp --user=athens_sudo\",\"slack-channel-events\":\"\",\"slack-channel-urgent\":\"\",\"slack-channel-users\":\"#cdp\"},\"creationTimestamp\":null,\"name\":\"cdp\",\"namespace\":\"\",\"selfLink\":\"/api/v1/namespacescdp\"},\"spec\":{\"finalizers\":[\"kubernetes\"]},\"status\":{\"phase\":\"Active\"}}\n",
+					"kubernetes.io/change-cause": "kubectl edit ns cdp --context=steel --user=steel_sudo",
+					"slack-channel-events": "",
+					"slack-channel-urgent": "",
+					"slack-channel-users": "#cdp"
+				  },
+				  "creationTimestamp": null,
+				  "name": "cdp",
+				  "selfLink": "/api/v1/namespacescdp"
+				},
+				"spec": {
+				  "finalizers": [
+					"kubernetes"
+				  ]
+				},
+				"status": {
+				  "phase": "Active"
+				}
+			  }`
+			var expected types.KubernetesNamespaceMetadata
+			expected.APIVersion = "v1"
+			expected.Kind = "Namespace"
+			expected.Metadata.Annotations.ContactEmail = "unit@test.com"
+			actual, err := parseKubernetesNamespaceMetadata([]byte(validJSON))
+			So(err, ShouldBeNil)
+			So(actual.APIVersion, ShouldResemble, expected.APIVersion)
+
 		})
 	})
 }

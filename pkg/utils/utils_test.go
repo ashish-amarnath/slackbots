@@ -28,3 +28,22 @@ func TestStringifyMessage(t *testing.T) {
 		})
 	})
 }
+
+func TestRunBashCmd(t *testing.T) {
+	Convey("RunBashCmd", t, func() {
+		Convey("should successfully run invoked with a valid bash command string", func() {
+			validBashCmd := "echo this should pass"
+			expected := "this should pass"
+			actual, err := RunBashCmd(validBashCmd)
+			So(err, ShouldBeNil)
+			So(actual, ShouldResemble, expected)
+		})
+		Convey("should fail when invoked with an invalid bash command string", func() {
+			invalidBashCmd := "whatwasithinking"
+			expected := ""
+			actual, err := RunBashCmd(invalidBashCmd)
+			So(err, ShouldNotBeNil)
+			So(actual, ShouldResemble, expected)
+		})
+	})
+}

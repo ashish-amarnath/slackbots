@@ -36,7 +36,7 @@ func parseAccOwnerResponse(raw []byte) (respObj types.AccNumRespMsg, err error) 
 	return
 }
 
-func parseKubernetesNamespaceMetadata(raw []byte) (respObj types.KubernetesNamespaceMetadata, err error) {
+func parseKubernetesNamespace(raw []byte) (respObj types.KubernetesNamespace, err error) {
 	err = json.Unmarshal(raw, &respObj)
 	return
 }
@@ -203,7 +203,7 @@ func ApplyKube2IamReq(msgText, kubeconfig string) string {
 	if err != nil {
 		resp = fmt.Sprintf("Failed to get namespace definition for namepsace=%s in cluster=%s. err=%s", namespace, cluster, err.Error())
 	} else {
-		nsObj, err := parseKubernetesNamespaceMetadata([]byte(nsJSON))
+		nsObj, err := parseKubernetesNamespace([]byte(nsJSON))
 		if err != nil {
 			resp = fmt.Sprintf("failed to parse namespace metadata definition for namespace=%s, %s", namespace, err.Error())
 		} else {
@@ -212,6 +212,7 @@ func ApplyKube2IamReq(msgText, kubeconfig string) string {
 			nsObj.Metadata.Annotations.Kube2IamBetaNordstromNetAllowedRoles = addNewKube2IamRole(nsObj.Metadata.Annotations.Kube2IamBetaNordstromNetAllowedRoles, awsRoleArn)
 			var marshalled []byte
 			marshalled, err = json.Marshal(nsObj)
+			glog.V(1).Infof("Marshalled nsObj:%s\n", string(marshalled))
 			if err != nil {
 				resp = fmt.Sprintf("failed to marshall updated namespace metadata, err=%s", err)
 				glog.Errorf("resp")

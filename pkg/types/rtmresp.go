@@ -1,5 +1,7 @@
 package types
 
+import "time"
+
 // ResponseRtmStart represents rtm start message
 type ResponseRtmStart struct {
 	Ok    bool   `json:"ok"`
@@ -67,20 +69,29 @@ type ADGroupMemberListResp struct {
 	Groups []string `json:"groups"`
 }
 
-// KubernetesNamespaceMetadata represents k8s namespace metadata
-type KubernetesNamespaceMetadata struct {
+// KubernetesNamespace represents k8s namespace metadata
+type KubernetesNamespace struct {
 	APIVersion string `json:"apiVersion"`
 	Kind       string `json:"kind"`
 	Metadata   struct {
 		Annotations struct {
+			CloudTeamID                                 string `json:"cloud-team-id"`
 			ContactEmail                                string `json:"contact-email"`
 			CostCenter                                  string `json:"cost-center"`
 			Kube2IamBetaNordstromNetAllowedRoles        string `json:"kube2iam.beta.nordstrom.net/allowed-roles"`
 			KubectlKubernetesIoLastAppliedConfiguration string `json:"kubectl.kubernetes.io/last-applied-configuration"`
 			KubernetesIoChangeCause                     string `json:"kubernetes.io/change-cause"`
-			SlackChannelEvents                          string `json:"slack-channel-events"`
-			SlackChannelUrgent                          string `json:"slack-channel-urgent"`
-			SlackChannelUsers                           string `json:"slack-channel-users"`
 		} `json:"annotations"`
-	}
+		CreationTimestamp time.Time `json:"creationTimestamp"`
+		Name              string    `json:"name"`
+		ResourceVersion   string    `json:"resourceVersion"`
+		SelfLink          string    `json:"selfLink"`
+		UID               string    `json:"uid"`
+	} `json:"metadata"`
+	Spec struct {
+		Finalizers []string `json:"finalizers"`
+	} `json:"spec"`
+	Status struct {
+		Phase string `json:"phase"`
+	} `json:"status"`
 }

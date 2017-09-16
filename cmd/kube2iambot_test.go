@@ -126,7 +126,7 @@ func TestParseKubernetesNamespaceMetadata(t *testing.T) {
 					"kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"v1\",\"kind\":\"Namespace\",\"metadata\":{\"annotations\":{\"contact-email\":\"techdsbiadtlkdvops@nordstrom.com\",\"cost-center\":\"\",\"kube2iam.beta.nordstrom.net/allowed-roles\":\"[\\\"arn:aws:iam::640598048906:role/cdp/k8s/CDPS3AndKmsStack-CDPFlinkForS3AndKMS-9336B1OLABTR\\\"]\\n\",\"kubernetes.io/change-cause\":\"kubectl edit ns cdp --user=athens_sudo\",\"slack-channel-events\":\"\",\"slack-channel-urgent\":\"\",\"slack-channel-users\":\"#cdp\"},\"creationTimestamp\":null,\"name\":\"cdp\",\"namespace\":\"\",\"selfLink\":\"/api/v1/namespacescdp\"},\"spec\":{\"finalizers\":[\"kubernetes\"]},\"status\":{\"phase\":\"Active\"}}\n",
 					"kubernetes.io/change-cause": "kubectl edit ns cdp --context=steel --user=steel_sudo"
 			  }`
-			_, err := parseKubernetesNamespaceMetadata([]byte(invalidJSON))
+			_, err := parseKubernetesNamespace([]byte(invalidJSON))
 			So(err, ShouldNotBeNil)
 		})
 		Convey("Should parse a valid JSON string into KubernetesNamespaceMetadata", func() {
@@ -157,11 +157,11 @@ func TestParseKubernetesNamespaceMetadata(t *testing.T) {
 				  "phase": "Active"
 				}
 			  }`
-			var expected types.KubernetesNamespaceMetadata
+			var expected types.KubernetesNamespace
 			expected.APIVersion = "v1"
 			expected.Kind = "Namespace"
 			expected.Metadata.Annotations.ContactEmail = "unit@test.com"
-			actual, err := parseKubernetesNamespaceMetadata([]byte(validJSON))
+			actual, err := parseKubernetesNamespace([]byte(validJSON))
 			So(err, ShouldBeNil)
 			So(actual.APIVersion, ShouldResemble, expected.APIVersion)
 

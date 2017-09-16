@@ -3,6 +3,8 @@ package utils
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"os/exec"
 	"strings"
 
@@ -17,7 +19,7 @@ func whichKubectl() (loc string, err error) {
 
 // RunBashCmd runs a supplied bash command
 func RunBashCmd(cmd string) (res string, err error) {
-	glog.V(8).Infof("Running [%s]\n", cmd)
+	glog.V(4).Infof("Running [%s]\n", cmd)
 	toRun := exec.Command("bash", "-c", cmd)
 	var stderr bytes.Buffer
 	toRun.Stderr = &stderr
@@ -40,8 +42,14 @@ func getKubeCtlBaseCmd(kubeconfig, cluster string) (baseCmd string, err error) {
 // ApplyUpdatedNamespaceMetadata applies the supplied namespace metadata to the supplied namespace in the supplied cluster
 func ApplyUpdatedNamespaceMetadata(kubeConfig, cluster, metadataJSON string) (err error) {
 	kcBaseCmd, err := getKubeCtlBaseCmd(kubeConfig, cluster)
-	applyCmd := fmt.Sprintf("%s | %s apply -f", metadataJSON, kcBaseCmd)
+	tempFile := "/tmp/ns-md"
+	err = ioutil.WriteFile(tempFile, []byte(metadataJSON), 0666)
+	if err != nil {
+		return
+	}
+	applyCmd := fmt.Sprintf("%s apply -f %s", kcBaseCmd, tempFile)
 	_, err = RunBashCmd(applyCmd)
+	os.Remove(tempFile)
 	return
 }
 

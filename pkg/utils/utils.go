@@ -39,10 +39,10 @@ func getKubeCtlBaseCmd(kubeconfig, cluster string) (baseCmd string, err error) {
 	return
 }
 
-// ApplyUpdatedNamespaceMetadata applies the supplied namespace metadata to the supplied namespace in the supplied cluster
-func ApplyUpdatedNamespaceMetadata(kubeConfig, cluster, metadataJSON string) (err error) {
+// UpdateNamespaceDefn applies the supplied namespace metadata to the supplied namespace in the supplied cluster
+func UpdateNamespaceDefn(kubeConfig, cluster, ns, metadataJSON string) (err error) {
 	kcBaseCmd, err := getKubeCtlBaseCmd(kubeConfig, cluster)
-	tempFile := "/tmp/ns-md"
+	tempFile := fmt.Sprintf("/tmp/%s.kube2iam-bot.ns-md.json", ns)
 	err = ioutil.WriteFile(tempFile, []byte(metadataJSON), 0666)
 	if err != nil {
 		return

@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 
 	"github.com/ashish-amarnath/slackbots/pkg/types"
+	"github.com/ashish-amarnath/slackbots/pkg/utils"
 	"github.com/golang/glog"
 	"golang.org/x/net/websocket"
 )
@@ -100,9 +101,8 @@ func (s *ServerConn) getNextMessageID() uint64 {
 // SendMessage sends a message from the slack bot
 func (s *ServerConn) SendMessage(m types.Message) error {
 	m.ID = s.getNextMessageID()
-	glog.V(4).Infof("Responding with message id:%d\n", m.ID)
+	glog.V(4).Infof("Reply=%s\n", utils.StringifyMessage(m))
 	return websocket.JSON.Send(s.conn, m)
-
 }
 
 //NewSlackServerConn creates and returns a new connection to the slackbot identfied by the token

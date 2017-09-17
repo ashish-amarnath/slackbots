@@ -8,7 +8,6 @@ import (
 	"github.com/ashish-amarnath/slackbots/cmd"
 	"github.com/ashish-amarnath/slackbots/pkg/slack"
 	"github.com/ashish-amarnath/slackbots/pkg/types"
-	"github.com/ashish-amarnath/slackbots/pkg/utils"
 	"github.com/golang/glog"
 )
 
@@ -52,11 +51,8 @@ func main() {
 			continue
 		}
 
-		glog.V(10).Infof("Processing message [%s]\n", utils.StringifyMessage(msg))
-		botResp := cmd.ProcessBotRquest(msg.Text, *adGroupMemberLookupURL, *awsMetadataServerURL, *awsMetadataServerAPIKey, *kubeconfig)
-		glog.V(4).Infof("Bot response=%s", botResp)
-		msg.Text = botResp
-		glog.V(8).Infoln(utils.StringifyMessage(msg))
-		slackConn.SendMessage(msg)
+		reply := cmd.ProcessBotRquest(msg, *adGroupMemberLookupURL, *awsMetadataServerURL, *awsMetadataServerAPIKey, *kubeconfig)
+
+		slackConn.SendMessage(reply)
 	}
 }

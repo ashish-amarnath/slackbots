@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/ashish-amarnath/slackbots/pkg/slack"
 	"github.com/ashish-amarnath/slackbots/pkg/types"
 	"github.com/ashish-amarnath/slackbots/pkg/utils"
 	"github.com/golang/glog"
@@ -257,7 +258,7 @@ func getRespMsg(req types.Message) types.Message {
 }
 
 // ProcessBotRquest processes the request based on the request type
-func ProcessBotRquest(req types.Message, adLookupServerURL, metadataServerURL, metadataServerAPIKey, kubeconfig string) types.Message {
+func ProcessBotRquest(slackConn *slack.ServerConn, req types.Message, adLookupServerURL, metadataServerURL, metadataServerAPIKey, kubeconfig string) {
 	reqText := req.Text
 	glog.V(2).Infof("Received request: %s\n", utils.StringifyMessage(req))
 
@@ -276,5 +277,5 @@ func ProcessBotRquest(req types.Message, adLookupServerURL, metadataServerURL, m
 	resp := getRespMsg(req)
 	resp.Text = respText
 
-	return resp
+	slackConn.SendMessage(resp)
 }

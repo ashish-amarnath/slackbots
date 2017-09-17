@@ -8,6 +8,7 @@ import (
 	"github.com/ashish-amarnath/slackbots/cmd"
 	"github.com/ashish-amarnath/slackbots/pkg/slack"
 	"github.com/ashish-amarnath/slackbots/pkg/types"
+	"github.com/ashish-amarnath/slackbots/pkg/utils"
 	"github.com/golang/glog"
 )
 
@@ -44,15 +45,14 @@ func main() {
 	for {
 		msg, err := slackConn.ReadMessage()
 		if err != nil {
-			glog.Fatalf("Failed to read message sent to slackbot. err=%s\n", err)
+			glog.Errorf("Failed to read message sent to slackbot. err=%s\n", err.Error())
+			continue
 		}
 		if msg.Type != types.MessageType {
-			glog.V(9).Infof("Ignoring messages of type %s\n", msg.Type)
+			glog.V(9).Infof("Unrecognized message %s\n", utils.StringifyMessage(msg))
 			continue
 		}
 
-		reply := cmd.ProcessBotRquest(msg, *adGroupMemberLookupURL, *awsMetadataServerURL, *awsMetadataServerAPIKey, *kubeconfig)
-
-		slackConn.SendMessage(reply)
+		go cmd.ProcessBotRquest(slackConn, msg, *adGroupMemberLookupURL, *awsMetadataServerURL, *awsMetadataServerAPIKey, *kubeconfig)
 	}
 }

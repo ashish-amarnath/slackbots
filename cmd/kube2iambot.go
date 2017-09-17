@@ -245,7 +245,7 @@ func ApplyKube2IamReq(msgText, kubeconfig string) string {
 // RejectKube2IamReq should get human intervention to process this request
 func RejectKube2IamReq(msgText string) string {
 	// TODO: notify requester about rejection?
-	return fmt.Sprintf("Go get a human to help out... NOW!!! @ashish.amarnath")
+	return fmt.Sprintf("Go get a human to help out... NOW!!!")
 }
 
 func getRespMsg(req types.Message) types.Message {

@@ -136,7 +136,7 @@ func getAdGrpMembers(adGroupMemberlistURL, adSecGrp string) (owners string, err 
 }
 
 // ValidateKube2IamReq validates kube2iam request
-func ValidateKube2IamReq(adGrpListURL, mdsURL, mdsAPIKey, msg string) string {
+func ValidateKube2IamReq(adGrpListURL, mdsURL, mdsAPIKey, msg, requestor string) string {
 	msgParts := strings.Split(msg, " ")
 	usage := fmt.Sprintf("ERROR:\n Request should be of the form ```%s <namespace> <roleArn> <cluster>``` Order is important. Received ```%s```", types.ValidateKube2IamBotReq, msg)
 	var resp string
@@ -163,13 +163,13 @@ func ValidateKube2IamReq(adGrpListURL, mdsURL, mdsAPIKey, msg string) string {
 	if err != nil {
 		return fmt.Sprintf("Failed to get AD security group for teamID=%s err:%s\n %s\n", roleAccOwnerID, err.Error(), usage)
 	}
-	nextStep := fmt.Sprintf("K8s admin copy paste \n ```%s %s %s %s``` \n OR \n ```%s %s %s```\n as appropriate",
+	nextStep := fmt.Sprintf("If requester is one of the owners of the role, K8s admin copy paste \n ```%s %s %s %s``` \n else, copy paste \n ```%s %s %s```\n as appropriate",
 		types.ApplysKube2IamBotReq, namespace, awsRoleArn, cluster, types.RejectKube2IamBotReq, namespace, awsRoleArn)
 	owners, err := getAdGrpMembers(adGrpListURL, adSecGrp)
 	if err != nil {
 		return fmt.Sprintf("Failed to get owners of AD security group %s. err=%s", adSecGrp, err.Error())
 	}
-	resp = fmt.Sprintf("Owners of ARN [%s] are [%s]\n %s", awsRoleArn, owners, nextStep)
+	resp = fmt.Sprintf("Requestor=<@%s>\nOwners of ARN [%s] are [%s]\n %s", requestor, awsRoleArn, owners, nextStep)
 	return resp
 }
 
@@ -245,7 +245,7 @@ func ApplyKube2IamReq(msgText, kubeconfig string) string {
 // RejectKube2IamReq should get human intervention to process this request
 func RejectKube2IamReq(msgText string) string {
 	// TODO: notify requester about rejection?
-	return fmt.Sprintf("Go get a human to help out... NOW!!!")
+	return fmt.Sprintf("Go get a human to help out... NOW!!! @ashish.amarnath")
 }
 
 func getRespMsg(req types.Message) types.Message {
@@ -265,7 +265,7 @@ func ProcessBotRquest(slackConn *slack.ServerConn, req types.Message, adLookupSe
 	botReqType := utils.GetBotReqType(reqText)
 	var respText string
 	if botReqType == types.ValidateKube2IamBotReq {
-		respText = ValidateKube2IamReq(adLookupServerURL, metadataServerURL, metadataServerAPIKey, reqText)
+		respText = ValidateKube2IamReq(adLookupServerURL, metadataServerURL, metadataServerAPIKey, reqText, req.User)
 	} else if botReqType == types.ApplysKube2IamBotReq {
 		respText = ApplyKube2IamReq(reqText, kubeconfig)
 	} else if botReqType == types.RejectKube2IamBotReq {

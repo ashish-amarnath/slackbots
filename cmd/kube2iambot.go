@@ -207,9 +207,9 @@ func ApplyKube2IamReq(msgText, kubeconfig string) string {
 		if err != nil {
 			resp = fmt.Sprintf("failed to parse namespace metadata definition for namespace=%s, %s", namespace, err.Error())
 		} else {
-			glog.V(1).Infof("allowedRoles:%s", nsObj.Metadata.Annotations.Kube2IamBetaNordstromNetAllowedRoles)
-			resp = "```" + fmt.Sprintf("CurrentRoles=%s", nsObj.Metadata.Annotations.Kube2IamBetaNordstromNetAllowedRoles)
-			nsObj.Metadata.Annotations.Kube2IamBetaNordstromNetAllowedRoles = addNewKube2IamRole(nsObj.Metadata.Annotations.Kube2IamBetaNordstromNetAllowedRoles, awsRoleArn)
+			glog.V(1).Infof("allowedRoles:%s", nsObj.Metadata.Annotations.Kube2IamAllowedRoles)
+			resp = "```" + fmt.Sprintf("CurrentRoles=%s", nsObj.Metadata.Annotations.Kube2IamAllowedRoles)
+			nsObj.Metadata.Annotations.Kube2IamAllowedRoles = addNewKube2IamRole(nsObj.Metadata.Annotations.Kube2IamAllowedRoles, awsRoleArn)
 			var marshalled []byte
 			marshalled, err = json.Marshal(nsObj)
 			glog.V(1).Infof("Marshalled nsObj:%s\n", string(marshalled))
@@ -221,7 +221,7 @@ func ApplyKube2IamReq(msgText, kubeconfig string) string {
 			if err != nil {
 				resp = fmt.Sprintf("failed to update namespace metadata for namespace=%s in cluster=%s", namespace, cluster)
 			} else {
-				resp += fmt.Sprintf("UpdatedRoles=%s", nsObj.Metadata.Annotations.Kube2IamBetaNordstromNetAllowedRoles) + "```"
+				resp += fmt.Sprintf("UpdatedRoles=%s", nsObj.Metadata.Annotations.Kube2IamAllowedRoles) + "```"
 			}
 		}
 	}

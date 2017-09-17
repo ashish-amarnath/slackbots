@@ -120,11 +120,11 @@ func TestParseKubernetesNamespaceMetadata(t *testing.T) {
 				"kind": "Namespace",
 				"metadata": {
 				  "annotations": {
-					"contact-email": "techdsbiadtlkdvops@nordstrom.com",
+					"contact-email": "unit@test.com",
 					"cost-center": "",
-					"kube2iam.beta.nordstrom.net/allowed-roles": "[\"arn:aws:iam::640598048906:role/cdp/k8s/CDPS3AndKmsStack-CDPFlinkForS3AndKMS-9336B1OLABTR\",\"arn:aws:iam::004323233598:role/cdp/k8s/cdpk8sservicerolestack-CDPK8sServiceRole-18FNPU97BUDBN\",\"arn:aws:iam::640598048906:role/NonProd_DSBIA/k8s/NonProd_DSBIA-s3-schema-access\",\"arn:aws:iam::500238854089:role/a0036/k8s/a0036-cdp-v1-flink-s3-Role\"]\n",
-					"kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"v1\",\"kind\":\"Namespace\",\"metadata\":{\"annotations\":{\"contact-email\":\"techdsbiadtlkdvops@nordstrom.com\",\"cost-center\":\"\",\"kube2iam.beta.nordstrom.net/allowed-roles\":\"[\\\"arn:aws:iam::640598048906:role/cdp/k8s/CDPS3AndKmsStack-CDPFlinkForS3AndKMS-9336B1OLABTR\\\"]\\n\",\"kubernetes.io/change-cause\":\"kubectl edit ns cdp --user=athens_sudo\",\"slack-channel-events\":\"\",\"slack-channel-urgent\":\"\",\"slack-channel-users\":\"#cdp\"},\"creationTimestamp\":null,\"name\":\"cdp\",\"namespace\":\"\",\"selfLink\":\"/api/v1/namespacescdp\"},\"spec\":{\"finalizers\":[\"kubernetes\"]},\"status\":{\"phase\":\"Active\"}}\n",
-					"kubernetes.io/change-cause": "kubectl edit ns cdp --context=steel --user=steel_sudo"
+					"kube2iam.beta.nordstrom.net/allowed-roles": "[\"arn:aws:iam::123456789012:role/superpowerfulrole1\",\"arn:aws:iam::123456789012:role/superpowerfulrole2",\"arn:aws:iam::123456789012:role/superpowerfulrole3",\"arn:aws:iam::123456789012:role/superpowerfulrole4\"]\n",
+					"kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"v1\",\"kind\":\"Namespace\",\"metadata\":{\"annotations\":{\"contact-email\":\"unit@test.com\",\"cost-center\":\"\",\"kube2iam.beta.nordstrom.net/allowed-roles\":\"[\\\"arn:aws:iam::123456789012:role/foo/k8s/fooS3AndKmsStack-fooFlinkForS3AndKMS-9336B1OLABTR\\\"]\\n\",\"kubernetes.io/change-cause\":\"kubectl edit ns foo --user=athens_sudo\",\"slack-channel-events\":\"\",\"slack-channel-urgent\":\"\",\"slack-channel-users\":\"#foo\"},\"creationTimestamp\":null,\"name\":\"foo\",\"namespace\":\"\",\"selfLink\":\"/api/v1/namespacesfoo\"},\"spec\":{\"finalizers\":[\"kubernetes\"]},\"status\":{\"phase\":\"Active\"}}\n",
+					"kubernetes.io/change-cause": "kubectl edit ns foo --context=cluster --user=cluster_sudo"
 			  }`
 			_, err := parseKubernetesNamespace([]byte(invalidJSON))
 			So(err, ShouldNotBeNil)
@@ -134,29 +134,31 @@ func TestParseKubernetesNamespaceMetadata(t *testing.T) {
 				"apiVersion": "v1",
 				"kind": "Namespace",
 				"metadata": {
-				  "annotations": {
-					"contact-email": "unit@test.com",
-					"cost-center": "",
-					"kube2iam.beta.nordstrom.net/allowed-roles": "[\"arn:aws:iam::640598048906:role/cdp/k8s/CDPS3AndKmsStack-CDPFlinkForS3AndKMS-9336B1OLABTR\",\"arn:aws:iam::004323233598:role/cdp/k8s/cdpk8sservicerolestack-CDPK8sServiceRole-18FNPU97BUDBN\",\"arn:aws:iam::640598048906:role/NonProd_DSBIA/k8s/NonProd_DSBIA-s3-schema-access\",\"arn:aws:iam::500238854089:role/a0036/k8s/a0036-cdp-v1-flink-s3-Role\"]\n",
-					"kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"v1\",\"kind\":\"Namespace\",\"metadata\":{\"annotations\":{\"contact-email\":\"techdsbiadtlkdvops@nordstrom.com\",\"cost-center\":\"\",\"kube2iam.beta.nordstrom.net/allowed-roles\":\"[\\\"arn:aws:iam::640598048906:role/cdp/k8s/CDPS3AndKmsStack-CDPFlinkForS3AndKMS-9336B1OLABTR\\\"]\\n\",\"kubernetes.io/change-cause\":\"kubectl edit ns cdp --user=athens_sudo\",\"slack-channel-events\":\"\",\"slack-channel-urgent\":\"\",\"slack-channel-users\":\"#cdp\"},\"creationTimestamp\":null,\"name\":\"cdp\",\"namespace\":\"\",\"selfLink\":\"/api/v1/namespacescdp\"},\"spec\":{\"finalizers\":[\"kubernetes\"]},\"status\":{\"phase\":\"Active\"}}\n",
-					"kubernetes.io/change-cause": "kubectl edit ns cdp --context=steel --user=steel_sudo",
-					"slack-channel-events": "",
-					"slack-channel-urgent": "",
-					"slack-channel-users": "#cdp"
-				  },
-				  "creationTimestamp": null,
-				  "name": "cdp",
-				  "selfLink": "/api/v1/namespacescdp"
+					"annotations": {
+						"contact-email": "unit@test.com",
+						"cost-center": "",
+						"kube2iam.beta.nordstrom.net/allowed-roles": "[\"arn:aws:iam::123456789012:role/foo/k8s/superawesomerole1\",\"arn:aws:iam::123456789012:role/foo/k8s/foo/k8s/superawesomerole2\",\"arn:aws:iam::123456789012:role/NonProd_DSBIA/k8s/superawesomerole3\",\"arn:aws:iam::123456789012:role/NonProd_DSBIA/k8s/superawesomerole2\"]\n",
+						"kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"v1\",\"kind\":\"Namespace\",\"metadata\":{\"annotations\":{\"contact-email\":\"techdsbiadtlkdvops@nordstrom.com\",\"cost-center\":\"\",\"kube2iam.beta.nordstrom.net/allowed-roles\":\"[\\\"arn:aws:iam::123456789012:role/foo/k8s/fooS3AndKmsStack-fooFlinkForS3AndKMS-9336B1OLABTR\\\"]\\n\",\"kubernetes.io/change-cause\":\"kubectl edit ns foo --user=athens_sudo\",\"slack-channel-events\":\"\",\"slack-channel-urgent\":\"\",\"slack-channel-users\":\"#foo\"},\"creationTimestamp\":null,\"name\":\"foo\",\"namespace\":\"\",\"selfLink\":\"/api/v1/namespacesfoo\"},\"spec\":{\"finalizers\":[\"kubernetes\"]},\"status\":{\"phase\":\"Active\"}}\n",
+						"kubernetes.io/change-cause": "kubectl edit ns foo --context=cluster --user=cluster_sudo",
+						"slack-channel-events": "",
+						"slack-channel-urgent": "",
+						"slack-channel-users": "#foo"
+					},
+					"creationTimestamp": "2017-06-30T00:15:38Z",
+					"name": "foo",
+					"resourceVersion": "193695467",
+					"selfLink": "/api/v1/namespacesfoo",
+					"uid": "3e95e64d-5d29-11e7-8024-0607ec9cbe90"
 				},
 				"spec": {
-				  "finalizers": [
-					"kubernetes"
-				  ]
+					"finalizers": [
+						"kubernetes"
+					]
 				},
 				"status": {
-				  "phase": "Active"
+					"phase": "Active"
 				}
-			  }`
+			}`
 			var expected types.KubernetesNamespace
 			expected.APIVersion = "v1"
 			expected.Kind = "Namespace"

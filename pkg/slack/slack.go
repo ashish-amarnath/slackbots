@@ -26,7 +26,7 @@ func parseRtmStartResponse(respBytes []byte) (respJSON types.ResponseRtmStart, e
 }
 
 func getSlackRTMURL(token string) string {
-	return fmt.Sprintf(types.SlackRtmUrlFmt, token)
+	return fmt.Sprintf(types.SlackRtmURLFmt, token)
 }
 
 func startSlackRTM(token string) (wsURL, userID string, err error) {

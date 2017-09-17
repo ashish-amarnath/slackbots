@@ -1,7 +1,8 @@
 package types
 
+// Constants
 const (
-	SlackRtmUrlFmt              = "https://slack.com/api/rtm.start?token=%s"
+	SlackRtmURLFmt              = "https://slack.com/api/rtm.start?token=%s"
 	SlackAPIServerURL           = "https://api.slack.com/"
 	MessageType                 = "message"
 	ValidateKube2IamBotReq      = "validateKube2iam"

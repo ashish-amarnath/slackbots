@@ -78,7 +78,7 @@ type KubernetesNamespace struct {
 			CloudTeamID                                 string `json:"cloud-team-id"`
 			ContactEmail                                string `json:"contact-email"`
 			CostCenter                                  string `json:"cost-center"`
-			Kube2IamBetaNordstromNetAllowedRoles        string `json:"kube2iam.beta.nordstrom.net/allowed-roles"`
+			Kube2IamAllowedRoles                        string `json:"kube2iam.beta.nordstrom.net/allowed-roles"`
 			KubectlKubernetesIoLastAppliedConfiguration string `json:"kubectl.kubernetes.io/last-applied-configuration"`
 			KubernetesIoChangeCause                     string `json:"kubernetes.io/change-cause"`
 		} `json:"annotations"`

@@ -57,8 +57,6 @@ func doHTTPRequest(url, apiKey string) (raw []byte, err error) {
 	if err != nil || resp.StatusCode != 200 {
 		if resp == nil {
 			err = fmt.Errorf("request to url=%s failed err=%s", url, err.Error())
-		} else {
-			err = fmt.Errorf("request to url=%s failed err=%s, httpStatusCode=%d(%s)", url, err.Error(), resp.StatusCode, resp.Status)
 		}
 		glog.Error(err)
 		return nil, err

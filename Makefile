@@ -1,24 +1,16 @@
 image_name := slackbot
 
 
-.PHONY: app test clean pkg pkg_test
+.PHONY: mkbuilddir buildbot runtests clean
 
 mkbuilddir:
 	mkdir -p build
 
-pkg:
-	go build pkg/types/*.go
-	go build pkg/slack/*.go
+buildbot: mkbuilddir
+	go build -o build/kube2iam-bot ./
 
-pkg-test: pkg
-	go test pkg/...
+runtests:
+	go test -v ./...
 
-cmd:
-	go build cmd/*.go
-
-cmd-test: cmd
-	go test cmd/...
-
-app:
-	go build -o build/slackbot *.go
-
+clean:
+	rm -rf ./build

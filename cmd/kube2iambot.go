@@ -221,9 +221,7 @@ func ApplyKube2IamReq(msgText, kubeconfig string) string {
 			return resp
 		}
 
-		resp = "```" + fmt.Sprintf("CurrentRoles=%s", nsObj.Metadata.Annotations.Kube2IamAllowedRoles)
 		nsObj.Metadata.Annotations.Kube2IamAllowedRoles = addNewKube2IamRole(nsObj.Metadata.Annotations.Kube2IamAllowedRoles, awsRoleArn)
-		resp += fmt.Sprintf("UpdatedRoles=%s", nsObj.Metadata.Annotations.Kube2IamAllowedRoles) + "```"
 		var marshalled []byte
 		marshalled, err = json.Marshal(nsObj)
 		if err != nil {
@@ -236,6 +234,7 @@ func ApplyKube2IamReq(msgText, kubeconfig string) string {
 			resp = fmt.Sprintf("failed to update namespace metadata for namespace=%s in cluster=%s", namespace, cluster)
 			return resp
 		}
+		resp = fmt.Sprintf("Successsfully updated allowed roles on namespace=%s.\nAllowedRoles=[%s]", namespace, nsObj.Metadata.Annotations.Kube2IamAllowedRoles)
 	}
 	return resp
 }

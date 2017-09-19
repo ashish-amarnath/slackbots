@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -168,5 +169,12 @@ func TestParseKubernetesNamespaceMetadata(t *testing.T) {
 			So(actual.APIVersion, ShouldResemble, expected.APIVersion)
 
 		})
+	})
+}
+
+func TestGetADUsrLookupEp(t *testing.T) {
+	Convey("getADUsrLookupEp should return the correct AD user lookup endpoint", t, func() {
+		fmt.Printf("%s\n", getADUsrLookupEp("ashish", "amarnath", "https://sherlock-api.nordstrom.net/api/v1/user/bycn"))
+		getADUserByCN("ashish", "amarnath", "foo", "https://sherlock-api.nordstrom.net/api/v1/user/bycn")
 	})
 }

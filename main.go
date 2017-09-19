@@ -17,6 +17,7 @@ var (
 	awsMetadataServerAPIKey *string
 	awsMetadataServerURL    *string
 	adGroupMemberLookupURL  *string
+	adLookupServerURL       *string
 	slackbotToken           *string
 	kubeconfig              *string
 )
@@ -30,6 +31,7 @@ func main() {
 	awsMetadataServerAPIKey = flag.String("apikey", "", "API key to use to engage AWS meta-data service")
 	awsMetadataServerURL = flag.String("metadataServerURL", "", "URL for AWS metadata server to get account info")
 	adGroupMemberLookupURL = flag.String("adgrouplookupurl", "", "URL for the AD group member list service.")
+	adLookupServerURL = flag.String("adLookupServerURL", "", "URL to lookup AD user")
 	slackbotToken = flag.String("slackbotToken", "", "Slack generated token for the bot")
 	kubeconfig = flag.String("kubeconfig", "", "Path to the kubeconfig for kubectl to use")
 	flag.Parse()
@@ -53,6 +55,6 @@ func main() {
 			continue
 		}
 
-		go cmd.ProcessBotRquest(slackConn, msg, *adGroupMemberLookupURL, *awsMetadataServerURL, *awsMetadataServerAPIKey, *kubeconfig)
+		go cmd.ProcessBotRquest(slackConn, msg, *adGroupMemberLookupURL, *awsMetadataServerURL, *awsMetadataServerAPIKey, *kubeconfig, *adLookupServerURL)
 	}
 }

@@ -13,6 +13,10 @@ import (
 	"golang.org/x/net/websocket"
 )
 
+var (
+	SlackUserMap map[string]types.SlackUser
+)
+
 // ServerConn represents an RTM connection to slack
 type ServerConn struct {
 	URL    string
@@ -57,6 +61,10 @@ func startSlackRTM(token string) (wsURL, userID string, err error) {
 	if err != nil {
 		glog.Fatalf("Slack RTM error:%s [Server=%s]\n", err, rtmURL)
 		return
+	}
+	SlackUserMap = make(map[string]types.SlackUser)
+	for _, usr := range respJSON.Users {
+		SlackUserMap[usr.ID] = usr
 	}
 
 	glog.V(3).Infoln("Successfully unmarshalled RTMStart Response.")
@@ -109,7 +117,7 @@ func (s *ServerConn) SendMessage(m types.Message) error {
 func NewSlackServerConn(token string) *ServerConn {
 	rtmURL, user, err := startSlackRTM(token)
 	if err != nil {
-		glog.Fatalf("Failed to start slack RTM, err=%s\n", err)
+		glog.Fatalf("Failed to start slack RTM, err=%s\n", err.Error())
 	}
 	wsConn := getSlackConn(rtmURL)
 	return &ServerConn{

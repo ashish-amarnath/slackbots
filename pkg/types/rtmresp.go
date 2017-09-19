@@ -4,10 +4,11 @@ import "time"
 
 // ResponseRtmStart represents rtm start message
 type ResponseRtmStart struct {
-	Ok    bool   `json:"ok"`
-	Error string `json:"error"`
-	URL   string `json:"url"`
-	Bot   BotID  `json:"self"`
+	Ok    bool        `json:"ok"`
+	Error string      `json:"error"`
+	URL   string      `json:"url"`
+	Bot   BotID       `json:"self"`
+	Users []SlackUser `json:"users"`
 }
 
 // BotID represents the object storing the user ID
@@ -94,4 +95,58 @@ type KubernetesNamespace struct {
 	Status struct {
 		Phase string `json:"phase"`
 	} `json:"status"`
+}
+
+// SlackUser represents a slack user
+type SlackUser struct {
+	ID       string `json:"id"`
+	TeamID   string `json:"team_id"`
+	Name     string `json:"name"`
+	Deleted  bool   `json:"deleted"`
+	RealName string `json:"real_name"`
+	Tz       string `json:"tz"`
+	TzLabel  string `json:"tz_label"`
+	TzOffset int    `json:"tz_offset"`
+	Profile  struct {
+		FirstName             string `json:"first_name"`
+		LastName              string `json:"last_name"`
+		RealName              string `json:"real_name"`
+		DisplayName           string `json:"display_name"`
+		RealNameNormalized    string `json:"real_name_normalized"`
+		DisplayNameNormalized string `json:"display_name_normalized"`
+		Email                 string `json:"email"`
+		Team                  string `json:"team"`
+	} `json:"profile"`
+	IsAdmin           bool   `json:"is_admin"`
+	IsOwner           bool   `json:"is_owner"`
+	IsPrimaryOwner    bool   `json:"is_primary_owner"`
+	IsRestricted      bool   `json:"is_restricted"`
+	IsUltraRestricted bool   `json:"is_ultra_restricted"`
+	IsBot             bool   `json:"is_bot"`
+	Updated           int    `json:"updated"`
+	IsAppUser         bool   `json:"is_app_user"`
+	Presence          string `json:"presence"`
+}
+
+// ADUser represents a user in AD
+type ADUser struct {
+	Dn             string `json:"dn"`
+	Cn             string `json:"cn"`
+	LanID          string `json:"lanID"`
+	FirstName      string `json:"firstName"`
+	LastName       string `json:"lastName"`
+	Email          string `json:"email"`
+	Manager        string `json:"manager"`
+	EmployeeNumber string `json:"employeeNumber"`
+}
+
+// BotReqParams represents Bot request  common params
+type BotReqParams struct {
+	ADGroupLookupURL     string
+	ADUserLookupURL      string
+	AWSMetadataServerURL string
+	AWSAPIKey            string
+	KubeConfig           string
+	Message              string
+	SlackUser            string
 }

@@ -68,7 +68,36 @@ func StringifyMessage(msg types.Message) string {
 		msg.ID, msg.Type, msg.Text, msg.Channel, msg.User)
 }
 
+// StringifySlackUser returns a string representation of a SlackUser
+func StringifySlackUser(su types.SlackUser) string {
+	return fmt.Sprintf("[ID=%s, FirstName=%s, LastName=%s, Email=%s]", su.ID, su.Profile.FirstName, su.Profile.LastName, su.Profile.Email)
+}
+
+// StringifyADUser returns a string representation of an AD user
+func StringifyADUser(au types.ADUser) string {
+	return fmt.Sprintf("[LanID=%s, FirstName=%s, LastName=%s, Email=%s]", au.LanID, au.FirstName, au.LastName, au.Email)
+}
+
 // GetBotReqType parses message text to extract bot type
 func GetBotReqType(msgText string) string {
 	return strings.Split(msgText, " ")[0]
+}
+
+// GetBotReqParams prepares bot request parameters
+func GetBotReqParams(adGrpLkpURL, adUsrLkpURL, awsMdsURL, awsMdsAPIKey, kubeConfig, message, slackUser string) types.BotReqParams {
+	return types.BotReqParams{
+		ADGroupLookupURL:     adGrpLkpURL,
+		ADUserLookupURL:      adUsrLkpURL,
+		AWSMetadataServerURL: awsMdsURL,
+		AWSAPIKey:            awsMdsAPIKey,
+		KubeConfig:           kubeConfig,
+		Message:              message,
+		SlackUser:            slackUser,
+	}
+}
+
+// StringifyBotReqParams returns a string representation of a BotReqParams
+func StringifyBotReqParams(o types.BotReqParams) string {
+	return fmt.Sprintf("[ADGroupLkpURL=[%s], ADUserLkpUrl=[%s], MetadataServerURL=[%s], MetadataServerAPIKey=[%s], kubeConfig=[%s], Message=[%s], SlackUser=[%s]",
+		o.ADGroupLookupURL, o.ADUserLookupURL, o.AWSMetadataServerURL, o.AWSAPIKey, o.KubeConfig, o.Message, o.SlackUser)
 }

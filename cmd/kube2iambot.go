@@ -67,6 +67,22 @@ func doHTTPRequest(url, apiKey string) (raw []byte, err error) {
 	return raw, nil
 }
 
+func runRawCurlCommands(url string) (raw []byte, err error) {
+	curlCmd := fmt.Sprintf("curl -s %s", url)
+	glog.V(5).Infof("curlCmd: %s", curlCmd)
+	cmd := exec.Command("bash", "-c", curlCmd)
+	out, err := cmd.Output()
+	if err != nil {
+		err = fmt.Errorf("failed to successfully run [%s] err=%s", curlCmd, err.Error())
+		glog.Error(err)
+		raw = nil
+		return
+	}
+
+	raw = out
+	return
+}
+
 func getAWSAccountOwnerID(baseURL, apiKey, awsAccNum string) (ownerID string, err error) {
 	url := getAccountOwnerIDEndpoint(baseURL, awsAccNum)
 	ownerID = ""
@@ -116,58 +132,140 @@ func parseADGroupMemberListResp(raw []byte) (respJSON types.ADGroupMemberListRes
 	return
 }
 
-func getAdGrpMembers(adGroupMemberlistURL, adSecGrp string) (owners string, err error) {
-	curlCmd := fmt.Sprintf("curl -s %s/%s", adGroupMemberlistURL, adSecGrp)
-	glog.V(5).Infof("curlCmd: %s", curlCmd)
-	cmd := exec.Command("bash", "-c", curlCmd)
-	out, err := cmd.Output()
+func parseADUserResp(raw []byte) (respJSON types.ADUser, err error) {
+	err = json.Unmarshal(raw, &respJSON)
+	return
+}
+
+func getAdGrpMembers(adGroupLkpURL, adSecGrp string) (owners []string, err error) {
+	url := fmt.Sprintf("%s/%s", adGroupLkpURL, adSecGrp)
+
+	out, err := runRawCurlCommands(url)
 	if err != nil {
-		err = fmt.Errorf("failed to successfully run [%s] err=%s", curlCmd, err.Error())
+		err = fmt.Errorf("failed to successfully run runRawCurlCommands(%s) err=%s", url, err.Error())
 		glog.Error(err)
-		owners = ""
+		owners = nil
 		return
 	}
 	adGrpMemberListResp, err := parseADGroupMemberListResp(out)
-	owners = strings.Join(adGrpMemberListResp.Members.Users, ", ")
+	owners = adGrpMemberListResp.Members.Users
 	err = nil
 	return
 }
 
-// ValidateKube2IamReq validates kube2iam request
-func ValidateKube2IamReq(adGrpListURL, mdsURL, mdsAPIKey, msg, requestor string) string {
-	msgParts := strings.Split(msg, " ")
-	usage := fmt.Sprintf("ERROR:\n Request should be of the form ```%s <namespace> <roleArn> <cluster>``` Order is important. Received ```%s```", types.ValidateKube2IamBotReq, msg)
-	var resp string
-
-	//TODO remove magic numbers
-	if len(msgParts) != 4 {
-		return usage
+func getRoleOwners(adGrpListURL, mdsURL, mdsAPIKey, awsRoleArn string) (owners []string, err error) {
+	owners = nil
+	err = nil
+	awsAccountNumber, err := getAccNumFromRoleArn(awsRoleArn)
+	if err != nil {
+		glog.Errorf("Failed to parse account number from role=[%s]\n", awsRoleArn)
+		return
 	}
+	roleAccOwnerID, err := getAWSAccountOwnerID(mdsURL, mdsAPIKey, awsAccountNumber)
+	if err != nil {
+		glog.Errorf("Failed to get role owner ID for AWS account number=[%s]\n", awsAccountNumber)
+		return
+	}
+	adSecGrp, err := getOwnerADSecurityGroup(mdsURL, mdsAPIKey, roleAccOwnerID)
+	if err != nil {
+		glog.Errorf("Failed to translate ownerID=[%s] to AD security group.\n", roleAccOwnerID)
+		return
+	}
+	owners, err = getAdGrpMembers(adGrpListURL, adSecGrp)
+	if err != nil {
+		owners = nil
+		glog.Errorf("Failed to get members of AD security group=[%s].\n", adSecGrp)
+	}
+	return
+}
+
+func getADUsrLookupEp(fName, lName, adLookupServerURL string) string {
+	const comma = `%2c`
+	const space = `%20`
+	return fmt.Sprintf("%s/%s%s%s%s", adLookupServerURL, lName, comma, space, fName)
+}
+
+func getADUserByCN(fName, lName, email, adUsrLookupURL string) (usr types.ADUser, err error) {
+	url := getADUsrLookupEp(fName, lName, adUsrLookupURL)
+	out, err := runRawCurlCommands(url)
+	if err != nil {
+		err = fmt.Errorf("failed to successfully run [%s] err=%s", url, err.Error())
+		glog.Error(err)
+	}
+
+	usr, err = parseADUserResp(out)
+	if strings.ToLower(usr.Email) != strings.ToLower(email) {
+		errStr := fmt.Sprintf("AD user's Email=[%s] doesn't match Slack user=[%s]", usr.Email, email)
+		glog.Error(errStr)
+		err = fmt.Errorf(errStr)
+	}
+
+	return
+}
+
+func getADUserForSlackUser(slackUID, adUsrLookupURL string) (adUsr types.ADUser, err error) {
+	su := slack.SlackUserMap[slackUID]
+	glog.V(1).Infof("SlackUser=%s\n", utils.StringifySlackUser(su))
+	adUsr, err = getADUserByCN(su.Profile.FirstName, su.Profile.LastName, su.Profile.Email, adUsrLookupURL)
+	glog.V(1).Infof("AD user=%s\n", utils.StringifyADUser(adUsr))
+	return
+}
+
+func isRequestorOwner(su, adUsrLookupURL string, owners []string) bool {
+	adUsr, err := getADUserForSlackUser(su, adUsrLookupURL)
+	if err != nil {
+		glog.Errorf("Unable to get AD user for <@%s>", su)
+		return false
+	}
+	matcherKey := fmt.Sprintf("%s, %s", adUsr.LastName, adUsr.FirstName)
+	res := false
+	// Do better than linear search? Hopefully this is a small slice
+	for _, owner := range owners {
+		if owner == matcherKey {
+			res = true
+			break
+		}
+	}
+	return res
+}
+
+func isRequestValid(botReqParams types.BotReqParams) bool {
+	return botReqParams.ADGroupLookupURL != "" &&
+		botReqParams.ADUserLookupURL != "" &&
+		botReqParams.AWSAPIKey != "" &&
+		botReqParams.AWSMetadataServerURL != "" &&
+		botReqParams.KubeConfig != "" &&
+		botReqParams.Message != "" &&
+		botReqParams.SlackUser != "" &&
+		len(strings.Split(botReqParams.Message, " ")) == types.Kube2IamBotReqLength
+}
+
+// RequestKube2IamReq validates kube2iam request
+func RequestKube2IamReq(botParams types.BotReqParams) string {
+
+	if !isRequestValid(botParams) {
+		return fmt.Sprintf("ERROR:\n Request should be of the form \n %s Order is important. Received ```%s```", types.RequestKube2IamBotReqFormat, botParams.Message)
+	}
+
+	msgParts := strings.Split(botParams.Message, " ")
+	var resp string
 
 	namespace := msgParts[1]
 	awsRoleArn := msgParts[2]
 	cluster := msgParts[3]
 
-	awsAccountNumber, err := getAccNumFromRoleArn(awsRoleArn)
+	owners, err := getRoleOwners(botParams.ADGroupLookupURL, botParams.AWSMetadataServerURL, botParams.AWSAPIKey, awsRoleArn)
 	if err != nil {
-		return fmt.Sprintf("Failed to parse AWS account number from role [%s]. Err:%s\n %s\n", awsRoleArn, err.Error(), usage)
+		return fmt.Sprintf("Failed to get owners of awsRoleArn=%s. err=%s", awsRoleArn, err.Error())
 	}
 
-	roleAccOwnerID, err := getAWSAccountOwnerID(mdsURL, mdsAPIKey, awsAccountNumber)
-	if err != nil {
-		return fmt.Sprintf("Failed to get Owner ID for AWS account number=%s. err:%s\n %s\n", awsAccountNumber, err.Error(), usage)
+	if isRequestorOwner(botParams.SlackUser, botParams.ADUserLookupURL, owners) {
+		resp = ApproveKube2IamReq(botParams)
+	} else {
+		approveMsg := fmt.Sprintf("```%s %s %s %s```", types.ApproveKube2IamBotReq, namespace, awsRoleArn, cluster)
+		resp = fmt.Sprintf("Hi <@%s>,\nOwners of ARN [%s] are %s.\n Please have one of the owners copy paste\n %s",
+			botParams.SlackUser, awsRoleArn, strings.Join(owners, "\n"), approveMsg)
 	}
-	adSecGrp, err := getOwnerADSecurityGroup(mdsURL, mdsAPIKey, roleAccOwnerID)
-	if err != nil {
-		return fmt.Sprintf("Failed to get AD security group for teamID=%s err:%s\n %s\n", roleAccOwnerID, err.Error(), usage)
-	}
-	nextStep := fmt.Sprintf("If requester is one of the owners of the role, K8s admin copy paste \n ```%s %s %s %s``` \n else, copy paste \n ```%s %s %s```\n as appropriate",
-		types.ApplysKube2IamBotReq, namespace, awsRoleArn, cluster, types.RejectKube2IamBotReq, namespace, awsRoleArn)
-	owners, err := getAdGrpMembers(adGrpListURL, adSecGrp)
-	if err != nil {
-		return fmt.Sprintf("Failed to get owners of AD security group %s. err=%s", adSecGrp, err.Error())
-	}
-	resp = fmt.Sprintf("Requestor=<@%s>\nOwners of ARN [%s] are [%s]\n %s", requestor, awsRoleArn, owners, nextStep)
 	return resp
 }
 
@@ -203,46 +301,62 @@ func addNewKube2IamRole(currentAllowedRoles, newRole string) string {
 	return newRoleSet
 }
 
-// ApplyKube2IamReq applies kube2iam annotations to namespaces
-func ApplyKube2IamReq(msgText, kubeconfig string) string {
-	msgTxtArr := strings.Split(msgText, " ")
+// ApproveKube2IamReq applies kube2iam annotations to namespaces
+func ApproveKube2IamReq(botReqParams types.BotReqParams) string {
+	if !isRequestValid(botReqParams) {
+		return fmt.Sprintf("ERROR:\n Request should be of the form \n %s Order is important. Received ```%s```", types.ApproveKube2IamBotReqFormat, botReqParams.Message)
+	}
+
+	glog.V(1).Infof("Received request %s\n", utils.StringifyBotReqParams(botReqParams))
+
+	msgTxtArr := strings.Split(botReqParams.Message, " ")
 	var resp string
 	namespace := msgTxtArr[1]
 	awsRoleArn := msgTxtArr[2]
 	cluster := msgTxtArr[3]
 
-	nsJSON, err := utils.GetNamespaceDefnJSON(kubeconfig, cluster, namespace)
+	roleOwners, err := getRoleOwners(botReqParams.ADGroupLookupURL, botReqParams.AWSMetadataServerURL, botReqParams.AWSAPIKey, awsRoleArn)
+	if err != nil {
+		resp = fmt.Sprintf("Failed to get owners of role=%s", awsRoleArn)
+		glog.Errorf(resp)
+		return resp
+	}
+
+	if !isRequestorOwner(botReqParams.SlackUser, botReqParams.ADUserLookupURL, roleOwners) {
+		resp = fmt.Sprintf("User <@%s> is not allowed to approve kube2Iam requests for role %s to namespace %s", botReqParams.SlackUser, awsRoleArn, namespace)
+		glog.Errorf(resp)
+		return resp
+	}
+
+	nsJSON, err := utils.GetNamespaceDefnJSON(botReqParams.KubeConfig, cluster, namespace)
 	if err != nil {
 		resp = fmt.Sprintf("Failed to get namespace definition for namepsace=%s in cluster=%s. err=%s", namespace, cluster, err.Error())
-	} else {
-		nsObj, err := parseKubernetesNamespace([]byte(nsJSON))
-		if err != nil {
-			resp = fmt.Sprintf("failed to parse namespace metadata definition for namespace=%s, %s", namespace, err.Error())
-			return resp
-		}
-
-		nsObj.Metadata.Annotations.Kube2IamAllowedRoles = addNewKube2IamRole(nsObj.Metadata.Annotations.Kube2IamAllowedRoles, awsRoleArn)
-		var marshalled []byte
-		marshalled, err = json.Marshal(nsObj)
-		if err != nil {
-			resp = fmt.Sprintf("failed to marshall updated namespace metadata, err=%s", err.Error())
-			glog.Errorf(resp)
-			return resp
-		}
-		err = utils.UpdateNamespaceDefn(kubeconfig, cluster, nsObj.Metadata.Name, string(marshalled))
-		if err != nil {
-			resp = fmt.Sprintf("failed to update namespace metadata for namespace=%s in cluster=%s", namespace, cluster)
-			return resp
-		}
-		resp = fmt.Sprintf("Successsfully updated allowed roles on namespace=%s.\nAllowedRoles=[%s]", namespace, nsObj.Metadata.Annotations.Kube2IamAllowedRoles)
+		glog.Errorf(resp)
+		return resp
 	}
-	return resp
-}
+	nsObj, err := parseKubernetesNamespace([]byte(nsJSON))
+	if err != nil {
+		resp = fmt.Sprintf("failed to parse namespace definition for namespace=%s, %s", namespace, err.Error())
+		glog.Errorf(resp)
+		return resp
+	}
 
-// RejectKube2IamReq should get human intervention to process this request
-func RejectKube2IamReq(msgText string) string {
-	// TODO: notify requester about rejection?
-	return fmt.Sprintf("Go get a human to help out... NOW!!!")
+	nsObj.Metadata.Annotations.Kube2IamAllowedRoles = addNewKube2IamRole(nsObj.Metadata.Annotations.Kube2IamAllowedRoles, awsRoleArn)
+	var marshalled []byte
+	marshalled, err = json.Marshal(nsObj)
+	if err != nil {
+		resp = fmt.Sprintf("failed to marshall updated namespace metadata, err=%s", err.Error())
+		glog.Errorf(resp)
+		return resp
+	}
+	err = utils.UpdateNamespaceDefn(botReqParams.KubeConfig, cluster, nsObj.Metadata.Name, string(marshalled))
+	if err != nil {
+		resp = fmt.Sprintf("failed to update namespace metadata for namespace=%s in cluster=%s", namespace, cluster)
+		return resp
+	}
+	resp = fmt.Sprintf("Successsfully updated allowed roles on namespace=%s.\nAllowedRoles=[%s]", namespace, nsObj.Metadata.Annotations.Kube2IamAllowedRoles)
+
+	return resp
 }
 
 func getRespMsg(req types.Message) types.Message {
@@ -255,18 +369,20 @@ func getRespMsg(req types.Message) types.Message {
 }
 
 // ProcessBotRquest processes the request based on the request type
-func ProcessBotRquest(slackConn *slack.ServerConn, req types.Message, adLookupServerURL, metadataServerURL, metadataServerAPIKey, kubeconfig string) {
+func ProcessBotRquest(slackConn *slack.ServerConn, req types.Message, adGroupLookupURL, metadataServerURL, metadataServerAPIKey, kubeconfig, adUsrLookupURL string) {
 	reqText := req.Text
 	glog.V(2).Infof("Received request: %s\n", utils.StringifyMessage(req))
 
 	botReqType := utils.GetBotReqType(reqText)
+
+	botReqParams := utils.GetBotReqParams(adGroupLookupURL, adUsrLookupURL, metadataServerURL, metadataServerAPIKey, kubeconfig, reqText, req.User)
+	glog.V(6).Infof("%s\n", utils.StringifyBotReqParams(botReqParams))
+
 	var respText string
-	if botReqType == types.ValidateKube2IamBotReq {
-		respText = ValidateKube2IamReq(adLookupServerURL, metadataServerURL, metadataServerAPIKey, reqText, req.User)
-	} else if botReqType == types.ApplysKube2IamBotReq {
-		respText = ApplyKube2IamReq(reqText, kubeconfig)
-	} else if botReqType == types.RejectKube2IamBotReq {
-		respText = RejectKube2IamReq(reqText)
+	if botReqType == types.RequestKube2IamBotReq {
+		respText = RequestKube2IamReq(botReqParams)
+	} else if botReqType == types.ApproveKube2IamBotReq {
+		respText = ApproveKube2IamReq(botReqParams)
 	} else {
 		glog.V(6).Infof("Unknown botReq %s", botReqType)
 	}

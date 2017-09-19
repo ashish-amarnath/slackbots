@@ -21,7 +21,7 @@ var (
 type ServerConn struct {
 	URL    string
 	conn   *websocket.Conn
-	userID string
+	UserID string
 	msgID  uint64
 }
 
@@ -115,14 +115,14 @@ func (s *ServerConn) SendMessage(m types.Message) error {
 
 //NewSlackServerConn creates and returns a new connection to the slackbot identfied by the token
 func NewSlackServerConn(token string) *ServerConn {
-	rtmURL, user, err := startSlackRTM(token)
+	rtmURL, botUsr, err := startSlackRTM(token)
 	if err != nil {
 		glog.Fatalf("Failed to start slack RTM, err=%s\n", err.Error())
 	}
 	wsConn := getSlackConn(rtmURL)
 	return &ServerConn{
 		URL:    rtmURL,
-		userID: user,
+		UserID: botUsr,
 		conn:   wsConn,
 		msgID:  0,
 	}

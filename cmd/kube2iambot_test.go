@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
@@ -124,8 +123,8 @@ func TestParseKubernetesNamespaceMetadata(t *testing.T) {
 					"contact-email": "unit@test.com",
 					"cost-center": "",
 					"kube2iam.beta.nordstrom.net/allowed-roles": "[\"arn:aws:iam::123456789012:role/superpowerfulrole1\",\"arn:aws:iam::123456789012:role/superpowerfulrole2",\"arn:aws:iam::123456789012:role/superpowerfulrole3",\"arn:aws:iam::123456789012:role/superpowerfulrole4\"]\n",
-					"kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"v1\",\"kind\":\"Namespace\",\"metadata\":{\"annotations\":{\"contact-email\":\"unit@test.com\",\"cost-center\":\"\",\"kube2iam.beta.nordstrom.net/allowed-roles\":\"[\\\"arn:aws:iam::123456789012:role/foo/k8s/fooS3AndKmsStack-fooFlinkForS3AndKMS-9336B1OLABTR\\\"]\\n\",\"kubernetes.io/change-cause\":\"kubectl edit ns foo --user=athens_sudo\",\"slack-channel-events\":\"\",\"slack-channel-urgent\":\"\",\"slack-channel-users\":\"#foo\"},\"creationTimestamp\":null,\"name\":\"foo\",\"namespace\":\"\",\"selfLink\":\"/api/v1/namespacesfoo\"},\"spec\":{\"finalizers\":[\"kubernetes\"]},\"status\":{\"phase\":\"Active\"}}\n",
-					"kubernetes.io/change-cause": "kubectl edit ns foo --context=cluster --user=cluster_sudo"
+					"kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"v1\",\"kind\":\"Namespace\",\"metadata\":{\"annotations\":{\"contact-email\":\"unit@test.com\",\"cost-center\":\"\",\"kube2iam.beta.nordstrom.net/allowed-roles\":\"[\\\"arn:aws:iam::123456789012:role/foo/k8s/fooS3AndKmsStack-fooFlinkForS3AndKMS-9336B1OLABTR\\\"]\\n\",\"kubernetes.io/change-cause\":\"kubectl edit ns foo --user=admin\",\"slack-channel-events\":\"\",\"slack-channel-urgent\":\"\",\"slack-channel-users\":\"#foo\"},\"creationTimestamp\":null,\"name\":\"foo\",\"namespace\":\"\",\"selfLink\":\"/api/v1/namespacesfoo\"},\"spec\":{\"finalizers\":[\"kubernetes\"]},\"status\":{\"phase\":\"Active\"}}\n",
+					"kubernetes.io/change-cause": "kubectl edit ns foo --context=cluster --user=admin"
 			  }`
 			_, err := parseKubernetesNamespace([]byte(invalidJSON))
 			So(err, ShouldNotBeNil)
@@ -139,8 +138,8 @@ func TestParseKubernetesNamespaceMetadata(t *testing.T) {
 						"contact-email": "unit@test.com",
 						"cost-center": "",
 						"kube2iam.beta.nordstrom.net/allowed-roles": "[\"arn:aws:iam::123456789012:role/foo/k8s/superawesomerole1\",\"arn:aws:iam::123456789012:role/foo/k8s/foo/k8s/superawesomerole2\",\"arn:aws:iam::123456789012:role/NonProd_DSBIA/k8s/superawesomerole3\",\"arn:aws:iam::123456789012:role/NonProd_DSBIA/k8s/superawesomerole2\"]\n",
-						"kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"v1\",\"kind\":\"Namespace\",\"metadata\":{\"annotations\":{\"contact-email\":\"techdsbiadtlkdvops@nordstrom.com\",\"cost-center\":\"\",\"kube2iam.beta.nordstrom.net/allowed-roles\":\"[\\\"arn:aws:iam::123456789012:role/foo/k8s/fooS3AndKmsStack-fooFlinkForS3AndKMS-9336B1OLABTR\\\"]\\n\",\"kubernetes.io/change-cause\":\"kubectl edit ns foo --user=athens_sudo\",\"slack-channel-events\":\"\",\"slack-channel-urgent\":\"\",\"slack-channel-users\":\"#foo\"},\"creationTimestamp\":null,\"name\":\"foo\",\"namespace\":\"\",\"selfLink\":\"/api/v1/namespacesfoo\"},\"spec\":{\"finalizers\":[\"kubernetes\"]},\"status\":{\"phase\":\"Active\"}}\n",
-						"kubernetes.io/change-cause": "kubectl edit ns foo --context=cluster --user=cluster_sudo",
+						"kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"v1\",\"kind\":\"Namespace\",\"metadata\":{\"annotations\":{\"contact-email\":\"unit.test@unittest.com\",\"cost-center\":\"\",\"kube2iam.beta.nordstrom.net/allowed-roles\":\"[\\\"arn:aws:iam::123456789012:role/foo/k8s/fooS3AndKmsStack-fooFlinkForS3AndKMS-9336B1OLABTR\\\"]\\n\",\"kubernetes.io/change-cause\":\"kubectl edit ns foo --user=admin\",\"slack-channel-events\":\"\",\"slack-channel-urgent\":\"\",\"slack-channel-users\":\"#foo\"},\"creationTimestamp\":null,\"name\":\"foo\",\"namespace\":\"\",\"selfLink\":\"/api/v1/namespacesfoo\"},\"spec\":{\"finalizers\":[\"kubernetes\"]},\"status\":{\"phase\":\"Active\"}}\n",
+						"kubernetes.io/change-cause": "kubectl edit ns foo --context=cluster --user=admin",
 						"slack-channel-events": "",
 						"slack-channel-urgent": "",
 						"slack-channel-users": "#foo"
@@ -192,22 +191,55 @@ func TestRunRawCurlCommands(t *testing.T) {
 }
 
 func TestGetOwnerADSecurityGroup(t *testing.T) {
-
+	Convey("getOwnerADSecurityGroup should return with error when unable to find AD security group for the AWS account number", t, func() {
+		url := "foobar.baz"
+		apiKey := "supersecret"
+		owner := "ADMINS"
+		actual, err := getOwnerADSecurityGroup(url, apiKey, owner)
+		So(actual, ShouldBeEmpty)
+		So(err, ShouldNotBeNil)
+	})
 }
 
 func TestParseADUserResp(t *testing.T) {}
 
-func TestGetAdGrpMembers(t *testing.T) {}
+func TestGetAdGrpMembers(t *testing.T) {
+	Convey("getAdGrpMembers should return with error when unable to get members of an AD group", t, func() {
+		url := "myadserver.foo"
+		adGrp := "ADMINS"
+		actual, err := getAdGrpMembers(url, adGrp)
+		So(actual, ShouldBeNil)
+		So(err, ShouldNotBeNil)
+	})
+}
 
-func TestGetRoleOwners(t *testing.T) {}
+func TestGetRoleOwners(t *testing.T) {
+	Convey("getRoleOwners should return with error when unable to find owners of an AWS role", t, func() {
+		adGrpURL := "my-awesome-adsrvr.foo"
+		msdURL := "super-awesome-mdsSrv.foo"
+		mdsAPIKey := "topsecret"
+		testRole := "arn:aws:iam::123456789012:role/superawesome-powerful-Role3"
+		actual, err := getRoleOwners(adGrpURL, msdURL, mdsAPIKey, testRole)
+		So(actual, ShouldBeNil)
+		So(err, ShouldNotBeNil)
+	})
+}
 
 func TestGetADUsrLookupEp(t *testing.T) {
 	Convey("getADUsrLookupEp should return the correct AD user lookup endpoint", t, func() {
-		fmt.Printf("%s\n", getADUsrLookupEp("ashish", "amarnath", "https://sherlock-api.nordstrom.net/api/v1/user/bycn"))
-		getADUserByCN("ashish", "amarnath", "foo", "https://sherlock-api.nordstrom.net/api/v1/user/bycn")
+		expected := `https://adUsrLkp/api/v1/usr/get/doe%2c%20john`
+		actual := getADUsrLookupEp("john", "doe", "https://adUsrLkp/api/v1/usr/get")
+		So(actual, ShouldResemble, expected)
 	})
 }
 
 func TestGetADUserByCN(t *testing.T) {
-
+	Convey("getADUserByCN should return with error when unable to get the requested AD user", t, func() {
+		fname := "John"
+		lname := "Doe"
+		email := "john.doe@johndoe.com"
+		adUsrURL := "https://adUsrLkp/api/v1/usr/get"
+		_, err := getADUserByCN(fname, lname, email, adUsrURL)
+		So(err, ShouldNotBeNil)
+	})
 }

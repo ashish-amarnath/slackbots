@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os/exec"
 	"strings"
 
 	"github.com/ashish-amarnath/slackbots/pkg/slack"
@@ -69,17 +68,15 @@ func doHTTPRequest(url, apiKey string) (raw []byte, err error) {
 
 func runRawCurlCommands(url string) (raw []byte, err error) {
 	curlCmd := fmt.Sprintf("curl -s %s", url)
-	glog.V(5).Infof("curlCmd: %s", curlCmd)
-	cmd := exec.Command("bash", "-c", curlCmd)
-	out, err := cmd.Output()
+	out, err := utils.RunBashCmd(curlCmd)
+
 	if err != nil {
 		err = fmt.Errorf("failed to successfully run [%s] err=%s", curlCmd, err.Error())
 		glog.Error(err)
 		raw = nil
 		return
 	}
-
-	raw = out
+	raw = []byte(out)
 	return
 }
 

@@ -172,9 +172,42 @@ func TestParseKubernetesNamespaceMetadata(t *testing.T) {
 	})
 }
 
+func TestDoHTTPRequest(t *testing.T) {
+	Convey("doHTTPRequest should returh with error when unable to successfully process the HTTP request", t, func() {
+		url := "foobar.baz"
+		apiKey := "supersecret"
+		actual, err := doHTTPRequest(url, apiKey)
+		So(actual, ShouldBeNil)
+		So(err, ShouldNotBeNil)
+	})
+}
+
+func TestRunRawCurlCommands(t *testing.T) {
+	Convey("runRawCurlCommands should return with error when unable to successfully run the curl cmd", t, func() {
+		url := "foobar.baz"
+		atcual, err := runRawCurlCommands(url)
+		So(atcual, ShouldBeNil)
+		So(err, ShouldNotBeNil)
+	})
+}
+
+func TestGetOwnerADSecurityGroup(t *testing.T) {
+
+}
+
+func TestParseADUserResp(t *testing.T) {}
+
+func TestGetAdGrpMembers(t *testing.T) {}
+
+func TestGetRoleOwners(t *testing.T) {}
+
 func TestGetADUsrLookupEp(t *testing.T) {
 	Convey("getADUsrLookupEp should return the correct AD user lookup endpoint", t, func() {
 		fmt.Printf("%s\n", getADUsrLookupEp("ashish", "amarnath", "https://sherlock-api.nordstrom.net/api/v1/user/bycn"))
 		getADUserByCN("ashish", "amarnath", "foo", "https://sherlock-api.nordstrom.net/api/v1/user/bycn")
 	})
+}
+
+func TestGetADUserByCN(t *testing.T) {
+
 }

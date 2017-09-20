@@ -202,7 +202,28 @@ func TestParseADGroupMemberListResp(t *testing.T) {
 	})
 }
 
-func TestParseADUserResp(t *testing.T) {}
+func TestParseADUserResp(t *testing.T) {
+	Convey("parseADUserResp", t, func() {
+		Convey("should parse a valid JSON string to ADUser", func() {
+			validJSON := `{"cn":"Doe, John","lanID":"XYZ7","firstName":"John","lastName":"Doe","email":"John.Doe@johndoe.com","manager":"Q, Madam","employeeNumber":"007"}`
+
+			actual, err := parseADUserResp([]byte(validJSON))
+			So(err, ShouldBeNil)
+			So(actual.Cn, ShouldResemble, "Doe, John")
+			So(actual.LanID, ShouldResemble, "XYZ7")
+			So(actual.FirstName, ShouldResemble, "John")
+			So(actual.LastName, ShouldResemble, "Doe")
+			So(actual.Email, ShouldResemble, "John.Doe@johndoe.com")
+			So(actual.Manager, ShouldResemble, "Q, Madam")
+			So(actual.EmployeeNumber, ShouldResemble, "007")
+		})
+		Convey("should fail when called with invalid JSON string", func() {
+			invalidJSON := `{"cn":"Doe, John","lanID":"XYZ7","firstName":"John","lastName":"Doe","email":"John.Doe@jo`
+			_, err := parseADUserResp([]byte(invalidJSON))
+			So(err, ShouldNotBeNil)
+		})
+	})
+}
 
 func TestGetAdGrpMembers(t *testing.T) {
 	Convey("getAdGrpMembers should return with error when unable to get members of an AD group", t, func() {

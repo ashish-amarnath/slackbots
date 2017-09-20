@@ -98,3 +98,36 @@ func TestGetBotReqType(t *testing.T) {
 		So(actual, ShouldResemble, expected)
 	})
 }
+
+func TestGetBotReqParams(t *testing.T) {
+	Convey("GetBotReqParams should construct a BotReqParam struct for the supplied params", t, func() {
+		var expected types.BotReqParams
+		expected.ADGroupLookupURL = "https://adGrpLkp/api/v1/usr/get"
+		expected.ADUserLookupURL = "https://adUsrLkp/api/v1/usr/get"
+		expected.AWSAPIKey = "masterkey"
+		expected.AWSMetadataServerURL = "https://jibberish.execute-api.us-west-81.amazonaws.com"
+		expected.KubeConfig = "/User/craycrayuser/.kube/config"
+		expected.Message = "@superbot !doSomethingAwesome foo arn:aws:iam::123456789012:role/superawesome-powerful-Role3 hydrogen"
+		expected.SlackUser = "UCRAY7Q"
+
+		actual := GetBotReqParams(expected.ADGroupLookupURL, expected.ADUserLookupURL, expected.AWSMetadataServerURL, expected.AWSAPIKey, expected.KubeConfig, expected.Message, expected.SlackUser)
+		So(actual, ShouldResemble, expected)
+	})
+}
+
+func TestStringifyBotReqParams(t *testing.T) {
+	Convey("StringifyBotReqParams should return a right representation of a BotReqParams struct", t, func() {
+		var to types.BotReqParams
+		to.ADGroupLookupURL = "https://adGrpLkp/api/v1/usr/get"
+		to.ADUserLookupURL = "https://adUsrLkp/api/v1/usr/get"
+		to.AWSAPIKey = "blahziblahziblah"
+		to.AWSMetadataServerURL = "https://jibberish.execute-api.us-west-81.amazonaws.com"
+		to.KubeConfig = "/User/craycrayuser/.kube/config"
+		to.Message = "@superbot !doSomethingAwesome foo arn:aws:iam::123456789012:role/superawesome-powerful-Role3 hydrogen"
+		to.SlackUser = "UCRAY7Q"
+
+		expected := `[ADGroupLkpURL=[https://adGrpLkp/api/v1/usr/get], ADUserLkpUrl=[https://adUsrLkp/api/v1/usr/get], MetadataServerURL=[https://jibberish.execute-api.us-west-81.amazonaws.com], MetadataServerAPIKey=[blahziblahziblah], kubeConfig=[/User/craycrayuser/.kube/config], Message=[@superbot !doSomethingAwesome foo arn:aws:iam::123456789012:role/superawesome-powerful-Role3 hydrogen], SlackUser=[UCRAY7Q]`
+		actual := StringifyBotReqParams(to)
+		So(actual, ShouldResemble, expected)
+	})
+}

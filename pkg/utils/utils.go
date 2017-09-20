@@ -80,7 +80,7 @@ func StringifyADUser(au types.ADUser) string {
 
 // GetBotReqType parses message text to extract bot type
 func GetBotReqType(msgText string) string {
-	return strings.Split(msgText, " ")[0]
+	return strings.Split(msgText, " ")[1]
 }
 
 // GetBotReqParams prepares bot request parameters

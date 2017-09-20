@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/ashish-amarnath/slackbots/cmd"
 	"github.com/ashish-amarnath/slackbots/pkg/slack"
@@ -50,8 +51,8 @@ func main() {
 			glog.Errorf("Failed to read message sent to slackbot. err=%s\n", err.Error())
 			continue
 		}
-		if msg.Type != types.MessageType {
-			glog.V(9).Infof("Unrecognized message %s\n", utils.StringifyMessage(msg))
+		if msg.Type != types.MessageType || !strings.HasPrefix(msg.Text, "<@"+slackConn.UserID+">") {
+			glog.V(9).Infof("Ignoring message %s\n", utils.StringifyMessage(msg))
 			continue
 		}
 

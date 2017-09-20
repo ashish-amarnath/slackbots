@@ -111,12 +111,14 @@ func getOwnerADSecurityGroup(baseURL, apiKey, ownerTeamID string) (adSecGrp stri
 		err = fmt.Errorf("doHttpRequest to url=%s failed, err=%s", url, err.Error())
 		glog.Error(err)
 		adSecGrp = ""
+		return
 	}
 	respJSON, err := parseAdSecGrpResponse(rBody)
 	if err != nil {
 		err = fmt.Errorf("failed to parse response from end point %s, err=%s", url, err.Error())
 		glog.Error(err)
 		adSecGrp = ""
+		return
 	}
 
 	err = nil
@@ -247,9 +249,9 @@ func RequestKube2IamReq(botParams types.BotReqParams) string {
 	msgParts := strings.Split(botParams.Message, " ")
 	var resp string
 
-	namespace := msgParts[1]
-	awsRoleArn := msgParts[2]
-	cluster := msgParts[3]
+	namespace := msgParts[2]
+	awsRoleArn := msgParts[3]
+	cluster := msgParts[4]
 
 	owners, err := getRoleOwners(botParams.ADGroupLookupURL, botParams.AWSMetadataServerURL, botParams.AWSAPIKey, awsRoleArn)
 	if err != nil {
@@ -260,7 +262,7 @@ func RequestKube2IamReq(botParams types.BotReqParams) string {
 		resp = ApproveKube2IamReq(botParams)
 	} else {
 		approveMsg := fmt.Sprintf("```%s %s %s %s```", types.ApproveKube2IamBotReq, namespace, awsRoleArn, cluster)
-		resp = fmt.Sprintf("Hi <@%s>,\nOwners of ARN [%s] are %s.\n Please have one of the owners copy paste\n %s",
+		resp = fmt.Sprintf("Hi <@%s>,\nOwners of ARN [%s] are\n %s.\n Please have one of the owners copy paste\n %s",
 			botParams.SlackUser, awsRoleArn, strings.Join(owners, "\n"), approveMsg)
 	}
 	return resp
@@ -308,9 +310,9 @@ func ApproveKube2IamReq(botReqParams types.BotReqParams) string {
 
 	msgTxtArr := strings.Split(botReqParams.Message, " ")
 	var resp string
-	namespace := msgTxtArr[1]
-	awsRoleArn := msgTxtArr[2]
-	cluster := msgTxtArr[3]
+	namespace := msgTxtArr[2]
+	awsRoleArn := msgTxtArr[3]
+	cluster := msgTxtArr[4]
 
 	roleOwners, err := getRoleOwners(botReqParams.ADGroupLookupURL, botReqParams.AWSMetadataServerURL, botReqParams.AWSAPIKey, awsRoleArn)
 	if err != nil {
@@ -365,6 +367,11 @@ func getRespMsg(req types.Message) types.Message {
 	}
 }
 
+func getSupportedRequestTypes() string {
+	return "This Bot can help you with the following requests:\n" +
+		fmt.Sprintf("%s\n%s\n", types.RequestKube2IamBotReqFormat, types.ApproveKube2IamBotReqFormat)
+}
+
 // ProcessBotRquest processes the request based on the request type
 func ProcessBotRquest(slackConn *slack.ServerConn, req types.Message, adGroupLookupURL, metadataServerURL, metadataServerAPIKey, kubeconfig, adUsrLookupURL string) {
 	reqText := req.Text
@@ -380,8 +387,10 @@ func ProcessBotRquest(slackConn *slack.ServerConn, req types.Message, adGroupLoo
 		respText = RequestKube2IamReq(botReqParams)
 	} else if botReqType == types.ApproveKube2IamBotReq {
 		respText = ApproveKube2IamReq(botReqParams)
+	} else if botReqType == types.HelpBotReq {
+		respText = getSupportedRequestTypes()
 	} else {
-		glog.V(6).Infof("Unknown botReq %s", botReqType)
+		respText = fmt.Sprintf("Unknown request type [%s]\n", botReqType) + getSupportedRequestTypes()
 	}
 
 	resp := getRespMsg(req)

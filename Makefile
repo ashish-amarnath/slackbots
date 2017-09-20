@@ -12,5 +12,8 @@ buildbot: mkbuilddir
 runtests:
 	go test -v ./...
 
+gettestcoverage:
+	go test -cover ./...
+
 clean:
 	rm -rf ./build

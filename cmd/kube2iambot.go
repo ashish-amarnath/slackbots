@@ -74,7 +74,6 @@ func runRawCurlCommands(url string) (raw []byte, err error) {
 		err = fmt.Errorf("failed to successfully run [%s] err=%s", curlCmd, err.Error())
 		glog.Error(err)
 		raw = nil
-		return
 	}
 	raw = []byte(out)
 	return
@@ -190,15 +189,14 @@ func getADUserByCN(fName, lName, email, adUsrLookupURL string) (usr types.ADUser
 	if err != nil {
 		err = fmt.Errorf("failed to successfully run [%s] err=%s", url, err.Error())
 		glog.Error(err)
+	} else {
+		usr, err = parseADUserResp(out)
+		if strings.ToLower(usr.Email) != strings.ToLower(email) {
+			errStr := fmt.Sprintf("AD user's Email=[%s] doesn't match Slack user=[%s]", usr.Email, email)
+			glog.Error(errStr)
+			err = fmt.Errorf(errStr)
+		}
 	}
-
-	usr, err = parseADUserResp(out)
-	if strings.ToLower(usr.Email) != strings.ToLower(email) {
-		errStr := fmt.Sprintf("AD user's Email=[%s] doesn't match Slack user=[%s]", usr.Email, email)
-		glog.Error(errStr)
-		err = fmt.Errorf(errStr)
-	}
-
 	return
 }
 
@@ -210,17 +208,12 @@ func getADUserForSlackUser(slackUID, adUsrLookupURL string) (adUsr types.ADUser,
 	return
 }
 
-func isRequestorOwner(su, adUsrLookupURL string, owners []string) bool {
-	adUsr, err := getADUserForSlackUser(su, adUsrLookupURL)
-	if err != nil {
-		glog.Errorf("Unable to get AD user for <@%s>", su)
-		return false
-	}
+func isRequestorOwner(adUsr types.ADUser, owners []string) bool {
 	matcherKey := fmt.Sprintf("%s, %s", adUsr.LastName, adUsr.FirstName)
 	res := false
 	// Do better than linear search? Hopefully this is a small slice
 	for _, owner := range owners {
-		if owner == matcherKey {
+		if strings.ToLower(owner) == strings.ToLower(matcherKey) {
 			res = true
 			break
 		}
@@ -255,10 +248,17 @@ func RequestKube2IamReq(botParams types.BotReqParams) string {
 
 	owners, err := getRoleOwners(botParams.ADGroupLookupURL, botParams.AWSMetadataServerURL, botParams.AWSAPIKey, awsRoleArn)
 	if err != nil {
-		return fmt.Sprintf("Failed to get owners of awsRoleArn=%s. err=%s", awsRoleArn, err.Error())
+		errStr := fmt.Sprintf("Failed to get owners of awsRoleArn=%s. err=%s", awsRoleArn, err.Error())
+		glog.Error(errStr)
+		return errStr
 	}
 
-	if isRequestorOwner(botParams.SlackUser, botParams.ADUserLookupURL, owners) {
+	adUsr, err := getADUserForSlackUser(botParams.SlackUser, botParams.ADUserLookupURL)
+	if err != nil {
+		glog.Errorf("Unable to get AD user for <@%s> for authorization", botParams.SlackUser)
+	}
+
+	if isRequestorOwner(adUsr, owners) {
 		resp = ApproveKube2IamReq(botParams)
 	} else {
 		approveMsg := fmt.Sprintf("```%s %s %s %s```", types.ApproveKube2IamBotReq, namespace, awsRoleArn, cluster)
@@ -316,12 +316,16 @@ func ApproveKube2IamReq(botReqParams types.BotReqParams) string {
 
 	roleOwners, err := getRoleOwners(botReqParams.ADGroupLookupURL, botReqParams.AWSMetadataServerURL, botReqParams.AWSAPIKey, awsRoleArn)
 	if err != nil {
-		resp = fmt.Sprintf("Failed to get owners of role=%s", awsRoleArn)
+		resp = fmt.Sprintf("Failed to get owners of awsRoleArn=%s. err=%s", awsRoleArn, err.Error())
 		glog.Errorf(resp)
 		return resp
 	}
+	adUsr, err := getADUserForSlackUser(botReqParams.SlackUser, botReqParams.ADUserLookupURL)
+	if err != nil {
+		glog.Errorf("Unable to get AD user for <@%s> for authorization", botReqParams.SlackUser)
+	}
 
-	if !isRequestorOwner(botReqParams.SlackUser, botReqParams.ADUserLookupURL, roleOwners) {
+	if !isRequestorOwner(adUsr, roleOwners) {
 		resp = fmt.Sprintf("User <@%s> is not allowed to approve kube2Iam requests for role %s to namespace %s", botReqParams.SlackUser, awsRoleArn, namespace)
 		glog.Errorf(resp)
 		return resp

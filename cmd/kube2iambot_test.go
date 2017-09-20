@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -24,15 +25,6 @@ func TestGetAccNumFromRoleArn(t *testing.T) {
 			So(actual, ShouldBeEmpty)
 			So(err, ShouldNotBeNil)
 		})
-	})
-}
-
-func TestGetAWSAccountOwnerID(t *testing.T) {
-	Convey("getAWSAccountOwnerID should return error when unable to process request sucessfully", t, func() {
-		glog.Errorf("Expected Error:\n")
-		actual, err := getAWSAccountOwnerID("https://example.com", "open-key", "123456789012")
-		So(actual, ShouldBeEmpty)
-		So(err, ShouldNotBeNil)
 	})
 }
 
@@ -66,48 +58,6 @@ func TestParseAccOwnerResponse(t *testing.T) {
 			So(actual.Data[0].AccountName, ShouldResemble, "unittest")
 			So(actual.Data[0].RequesterPersonID, ShouldEqual, 10)
 			So(actual.Data[0].Size, ShouldResemble, "TEAMXL")
-		})
-	})
-}
-
-func TestParseAdSecGrpResponse(t *testing.T) {
-	Convey("parseAdSecGrpResponse", t, func() {
-		Convey("Should fail when called with invalid JSON bytes", func() {
-			invalidJSON := `{"data": [{"VP": 201, "Name": "k8s", "Tags": null, "OrgName": "Engineering Platform", "ADSecurityGroup": `
-			_, err := parseAdSecGrpResponse([]byte(invalidJSON))
-			So(err, ShouldNotBeNil)
-		})
-		Convey("Should parse a valid JSON string into AdSecurityGroupResp", func() {
-			validJSON := `{"data": [{"Name": "ut", "OrgName": "unit test", "ADSecurityGroup": "unittestAdmins", "ID": 11, "Director": 123, "CostCenter": 12345, "EmailDistList": "unit@test.com"}]}`
-			actual, err := parseAdSecGrpResponse([]byte(validJSON))
-			So(err, ShouldBeNil)
-			So(actual.Data[0].ADSecurityGroup, ShouldResemble, "unittestAdmins")
-			So(actual.Data[0].CostCenter, ShouldEqual, 12345)
-			So(actual.Data[0].Director, ShouldResemble, 123)
-			So(actual.Data[0].EmailDistList, ShouldResemble, "unit@test.com")
-			So(actual.Data[0].ID, ShouldEqual, 11)
-			So(actual.Data[0].Name, ShouldResemble, "ut")
-			So(actual.Data[0].OrgName, ShouldResemble, "unit test")
-		})
-	})
-}
-
-func TestParseADGroupMemberListResp(t *testing.T) {
-	Convey("parseADGroupMemberListResp", t, func() {
-		Convey("Should fail when called with invalid JSON bytes", func() {
-			invalidJSON := `{"name":"codeNinjas","description":"super awesome group","email":"codeninjas`
-			_, err := parseADGroupMemberListResp([]byte(invalidJSON))
-			So(err, ShouldNotBeNil)
-		})
-		Convey("Should parse a valid JSON string into ADGroupMemberListResp", func() {
-			validJSON := `{"name":"codeNinjas","description":"super awesome group","email":"codeninjas@ninjaing.com","type":"unittest","updated":"2017-08-28T17:24:46.000Z","members":{"groups":[],"users":["ninja1","ninja2","ninja3","ninja4","ninja5"]},"managedBy":{"group":null,"user":"ninjaLeader"},"groups":["Ninja-Team1","Ninja-Team2","Ninja-Team3"]}`
-			actual, err := parseADGroupMemberListResp([]byte(validJSON))
-			So(err, ShouldBeNil)
-			So(actual.Description, ShouldResemble, "super awesome group")
-			So(actual.Name, ShouldResemble, "codeNinjas")
-			So(actual.Email, ShouldResemble, "codeninjas@ninjaing.com")
-			So(actual.Type, ShouldResemble, "unittest")
-			So(strings.Join(actual.Members.Users, ","), ShouldResemble, "ninja1,ninja2,ninja3,ninja4,ninja5")
 		})
 	})
 }
@@ -185,8 +135,39 @@ func TestRunRawCurlCommands(t *testing.T) {
 	Convey("runRawCurlCommands should return with error when unable to successfully run the curl cmd", t, func() {
 		url := "foobar.baz"
 		atcual, err := runRawCurlCommands(url)
-		So(atcual, ShouldBeNil)
+		So(atcual, ShouldBeEmpty)
 		So(err, ShouldNotBeNil)
+	})
+}
+
+func TestGetAWSAccountOwnerID(t *testing.T) {
+	Convey("getAWSAccountOwnerID should return error when unable to process request sucessfully", t, func() {
+		glog.Errorf("Expected Error:\n")
+		actual, err := getAWSAccountOwnerID("https://example.com", "open-key", "123456789012")
+		So(actual, ShouldBeEmpty)
+		So(err, ShouldNotBeNil)
+	})
+}
+
+func TestParseAdSecGrpResponse(t *testing.T) {
+	Convey("parseAdSecGrpResponse", t, func() {
+		Convey("Should fail when called with invalid JSON bytes", func() {
+			invalidJSON := `{"data": [{"VP": 201, "Name": "k8s", "Tags": null, "OrgName": "Engineering Platform", "ADSecurityGroup": `
+			_, err := parseAdSecGrpResponse([]byte(invalidJSON))
+			So(err, ShouldNotBeNil)
+		})
+		Convey("Should parse a valid JSON string into AdSecurityGroupResp", func() {
+			validJSON := `{"data": [{"Name": "ut", "OrgName": "unit test", "ADSecurityGroup": "unittestAdmins", "ID": 11, "Director": 123, "CostCenter": 12345, "EmailDistList": "unit@test.com"}]}`
+			actual, err := parseAdSecGrpResponse([]byte(validJSON))
+			So(err, ShouldBeNil)
+			So(actual.Data[0].ADSecurityGroup, ShouldResemble, "unittestAdmins")
+			So(actual.Data[0].CostCenter, ShouldEqual, 12345)
+			So(actual.Data[0].Director, ShouldResemble, 123)
+			So(actual.Data[0].EmailDistList, ShouldResemble, "unit@test.com")
+			So(actual.Data[0].ID, ShouldEqual, 11)
+			So(actual.Data[0].Name, ShouldResemble, "ut")
+			So(actual.Data[0].OrgName, ShouldResemble, "unit test")
+		})
 	})
 }
 
@@ -198,6 +179,26 @@ func TestGetOwnerADSecurityGroup(t *testing.T) {
 		actual, err := getOwnerADSecurityGroup(url, apiKey, owner)
 		So(actual, ShouldBeEmpty)
 		So(err, ShouldNotBeNil)
+	})
+}
+
+func TestParseADGroupMemberListResp(t *testing.T) {
+	Convey("parseADGroupMemberListResp", t, func() {
+		Convey("Should fail when called with invalid JSON bytes", func() {
+			invalidJSON := `{"name":"codeNinjas","description":"super awesome group","email":"codeninjas`
+			_, err := parseADGroupMemberListResp([]byte(invalidJSON))
+			So(err, ShouldNotBeNil)
+		})
+		Convey("Should parse a valid JSON string into ADGroupMemberListResp", func() {
+			validJSON := `{"name":"codeNinjas","description":"super awesome group","email":"codeninjas@ninjaing.com","type":"unittest","updated":"2017-08-28T17:24:46.000Z","members":{"groups":[],"users":["ninja1","ninja2","ninja3","ninja4","ninja5"]},"managedBy":{"group":null,"user":"ninjaLeader"},"groups":["Ninja-Team1","Ninja-Team2","Ninja-Team3"]}`
+			actual, err := parseADGroupMemberListResp([]byte(validJSON))
+			So(err, ShouldBeNil)
+			So(actual.Description, ShouldResemble, "super awesome group")
+			So(actual.Name, ShouldResemble, "codeNinjas")
+			So(actual.Email, ShouldResemble, "codeninjas@ninjaing.com")
+			So(actual.Type, ShouldResemble, "unittest")
+			So(strings.Join(actual.Members.Users, ","), ShouldResemble, "ninja1,ninja2,ninja3,ninja4,ninja5")
+		})
 	})
 }
 
@@ -214,14 +215,25 @@ func TestGetAdGrpMembers(t *testing.T) {
 }
 
 func TestGetRoleOwners(t *testing.T) {
-	Convey("getRoleOwners should return with error when unable to find owners of an AWS role", t, func() {
-		adGrpURL := "my-awesome-adsrvr.foo"
-		msdURL := "super-awesome-mdsSrv.foo"
-		mdsAPIKey := "topsecret"
-		testRole := "arn:aws:iam::123456789012:role/superawesome-powerful-Role3"
-		actual, err := getRoleOwners(adGrpURL, msdURL, mdsAPIKey, testRole)
-		So(actual, ShouldBeNil)
-		So(err, ShouldNotBeNil)
+	Convey("getRoleOwners", t, func() {
+		Convey("should return with error when unable to find owners of an AWS role", func() {
+			adGrpURL := "my-awesome-adsrvr.foo"
+			msdURL := "super-awesome-mdsSrv.foo"
+			mdsAPIKey := "topsecret"
+			testRole := "arn:aws:iam::123456789012:role/superawesome-powerful-Role3"
+			actual, err := getRoleOwners(adGrpURL, msdURL, mdsAPIKey, testRole)
+			So(actual, ShouldBeNil)
+			So(err, ShouldNotBeNil)
+		})
+		Convey("should return with error when called with an invalid AWS role", func() {
+			adGrpURL := "my-awesome-adsrvr.foo"
+			msdURL := "super-awesome-mdsSrv.foo"
+			mdsAPIKey := "topsecret"
+			testRole := "arn-aws-iam--123456789012-role/superawesome-powerful-Role3"
+			actual, err := getRoleOwners(adGrpURL, msdURL, mdsAPIKey, testRole)
+			So(actual, ShouldBeNil)
+			So(err, ShouldNotBeNil)
+		})
 	})
 }
 
@@ -241,5 +253,167 @@ func TestGetADUserByCN(t *testing.T) {
 		adUsrURL := "https://adUsrLkp/api/v1/usr/get"
 		_, err := getADUserByCN(fname, lname, email, adUsrURL)
 		So(err, ShouldNotBeNil)
+	})
+}
+
+func TestGetADUserForSlackUser(t *testing.T) {
+	Convey("getADUserForSlackUser return error when unable to get AD user corresponding to the supplied slack user", t, func() {
+		testSlackUsr := "U725Q5UAY"
+		adUsrURL := "https://adUsrLkp/api/v1/usr/get"
+		_, err := getADUserForSlackUser(testSlackUsr, adUsrURL)
+		So(err, ShouldNotBeNil)
+	})
+}
+
+func TestIsRequestorOwner(t *testing.T) {
+	Convey("isRequestorOwner", t, func() {
+		Convey("should return true when requestor is owner", func() {
+			var testADUsr types.ADUser
+			testADUsr.FirstName = "jOhN"
+			testADUsr.LastName = "dOe"
+			testADUsr.Email = "JOHN.DOE@jOhnDoE.cOm"
+			var owners []string
+
+			owners = append(owners, "Foe, John")
+			owners = append(owners, "bar, foo")
+			owners = append(owners, "Doe, Jane")
+			owners = append(owners, "DoE, JoHn")
+			actual := isRequestorOwner(testADUsr, owners)
+			So(actual, ShouldBeTrue)
+		})
+		Convey("should return false when requestor is not owner", func() {
+			var testADUsr types.ADUser
+			testADUsr.FirstName = "jOhN"
+			testADUsr.LastName = "dOe"
+			testADUsr.Email = "JOHN.DOE@jOhnDoE.cOm"
+			var owners []string
+
+			owners = append(owners, "Foe, John")
+			owners = append(owners, "bar, foo")
+			owners = append(owners, "Doe, Jane")
+			owners = append(owners, "DoE, James")
+			actual := isRequestorOwner(testADUsr, owners)
+			So(actual, ShouldBeFalse)
+		})
+	})
+}
+
+func TestIsRequestValid(t *testing.T) {
+	Convey("isRequestValid", t, func() {
+		Convey("should return true for a valid request", func() {
+			var validReq types.BotReqParams
+			validReq.ADGroupLookupURL = "https://adGrpLkp/api/v1/usr/get"
+			validReq.ADUserLookupURL = "https://adUsrLkp/api/v1/usr/get"
+			validReq.AWSAPIKey = "blahziblahziblah"
+			validReq.AWSMetadataServerURL = "https://jibberish.execute-api.us-west-81.amazonaws.com"
+			validReq.KubeConfig = "/User/craycrayuser/.kube/config"
+			validReq.Message = "@superbot !doSomethingAwesome foo arn:aws:iam::123456789012:role/superawesome-powerful-Role3 hydrogen"
+			validReq.SlackUser = "UCRAY7Q"
+
+			actual := isRequestValid(validReq)
+			So(actual, ShouldBeTrue)
+		})
+		Convey("should return false for an invalid request", func() {
+			var invalidReq types.BotReqParams
+			actual := isRequestValid(invalidReq)
+			So(actual, ShouldBeFalse)
+		})
+	})
+}
+
+func TestRequestKube2IamReq(t *testing.T) {
+	Convey("RequestKube2IamReq", t, func() {
+		Convey("should return error when unable to get owners of role ARN", func() {
+			var validReq types.BotReqParams
+			validReq.ADGroupLookupURL = "https://adGrpLkp/api/v1/usr/get"
+			validReq.ADUserLookupURL = "https://adUsrLkp/api/v1/usr/get"
+			validReq.AWSAPIKey = "blahziblahziblah"
+			validReq.AWSMetadataServerURL = "https://jibberish.execute-api.us-west-81.amazonaws.com"
+			validReq.KubeConfig = "/User/craycrayuser/.kube/config"
+			validReq.Message = "@superbot !doSomethingAwesome foo arn:aws:iam::123456789012:role/superawesome-powerful-Role3 hydrogen"
+			validReq.SlackUser = "UCRAY7Q"
+
+			expected := `Failed to get owners of awsRoleArn=arn:aws:iam::123456789012:role/superawesome-powerful-Role3. err=doHttpRequest to getAWSAccountOwnerID url=https://jibberish.execute-api.us-west-81.amazonaws.com/dev_read/accounts?AccountNumber=123456789012 failed, err=unexpected end of JSON input`
+			actual := RequestKube2IamReq(validReq)
+			So(actual, ShouldResemble, expected)
+		})
+		Convey("should return error when called with invalid request", func() {
+			var invalidReq types.BotReqParams
+			expected := fmt.Sprintf("ERROR:\n Request should be of the form \n %s Order is important. Received ```%s```", types.RequestKube2IamBotReqFormat, invalidReq.Message)
+			actual := RequestKube2IamReq(invalidReq)
+			So(actual, ShouldResemble, expected)
+		})
+	})
+}
+
+func TestAddNewKube2IamRole(t *testing.T) {
+	Convey("addNewKube2IamRole", t, func() {
+		Convey("should add a new role to existing empty roles", func() {
+			testRole := "arn:aws:iam::123456789012:role/superawesome-powerful-Role3"
+			currentRole := "[]"
+
+			expected := `["arn:aws:iam::123456789012:role/superawesome-powerful-Role3"]`
+			actual := addNewKube2IamRole(currentRole, testRole)
+			So(actual, ShouldResemble, expected)
+		})
+		Convey("should add new role to existing roles", func() {
+			current := `["arn:aws:iam::123456789012:role/superawesome-powerful-Role3","arn:aws:iam::123456789012:role/superawesome-powerful-Role1"]`
+			newRole := "arn:aws:iam::123456789012:role/superawesome-powerful-Role2"
+
+			expected := `["arn:aws:iam::123456789012:role/superawesome-powerful-Role3","arn:aws:iam::123456789012:role/superawesome-powerful-Role1","arn:aws:iam::123456789012:role/superawesome-powerful-Role2"]`
+			actual := addNewKube2IamRole(current, newRole)
+			So(actual, ShouldResemble, expected)
+		})
+		Convey("should not add duplicate roles", func() {
+			current := `["arn:aws:iam::123456789012:role/superawesome-powerful-Role3","arn:aws:iam::123456789012:role/superawesome-powerful-Role1","arn:aws:iam::123456789012:role/superawesome-powerful-Role2"]`
+			newRole := `arn:aws:iam::123456789012:role/superawesome-powerful-Role3`
+
+			actual := addNewKube2IamRole(current, newRole)
+			So(actual, ShouldResemble, current)
+		})
+	})
+}
+
+func TestApproveKube2IamReq(t *testing.T) {
+	Convey("ApproveKube2IamReq", t, func() {
+		Convey("should return error when unable to get owners of role ARN", func() {
+			var validReq types.BotReqParams
+			validReq.ADGroupLookupURL = "https://adGrpLkp/api/v1/usr/get"
+			validReq.ADUserLookupURL = "https://adUsrLkp/api/v1/usr/get"
+			validReq.AWSAPIKey = "blahziblahziblah"
+			validReq.AWSMetadataServerURL = "https://jibberish.execute-api.us-west-81.amazonaws.com"
+			validReq.KubeConfig = "/User/craycrayuser/.kube/config"
+			validReq.Message = "@superbot !doSomethingAwesome foo arn:aws:iam::123456789012:role/superawesome-powerful-Role3 hydrogen"
+			validReq.SlackUser = "UCRAY7Q"
+
+			expected := `Failed to get owners of awsRoleArn=arn:aws:iam::123456789012:role/superawesome-powerful-Role3. err=doHttpRequest to getAWSAccountOwnerID url=https://jibberish.execute-api.us-west-81.amazonaws.com/dev_read/accounts?AccountNumber=123456789012 failed, err=unexpected end of JSON input`
+			actual := ApproveKube2IamReq(validReq)
+			So(actual, ShouldResemble, expected)
+		})
+		Convey("should return error when called with invalid request", func() {
+			var invalidReq types.BotReqParams
+			expected := fmt.Sprintf("ERROR:\n Request should be of the form \n %s Order is important. Received ```%s```", types.ApproveKube2IamBotReqFormat, invalidReq.Message)
+			actual := ApproveKube2IamReq(invalidReq)
+			So(actual, ShouldResemble, expected)
+		})
+	})
+}
+
+func TestGetRespMsg(t *testing.T) {
+	Convey("getRespMsg should return a copy of supplied message as a response", t, func() {
+		var req types.Message
+		req.ID = 1010
+		req.Channel = "hit-channel"
+		req.Text = "this is the most liked message"
+		req.Type = "unit-test"
+		req.User = "SUPER-HIP"
+
+		actual := getRespMsg(req)
+
+		So(actual.Text, ShouldNotResemble, req.Text)
+		So(actual.ID, ShouldEqual, req.ID)
+		So(actual.Channel, ShouldResemble, req.Channel)
+		So(actual.Type, ShouldResemble, req.Type)
+		So(actual.User, ShouldResemble, req.User)
 	})
 }

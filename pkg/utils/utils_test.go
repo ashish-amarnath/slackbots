@@ -47,3 +47,54 @@ func TestRunBashCmd(t *testing.T) {
 		})
 	})
 }
+
+func TestStringifySlackUser(t *testing.T) {
+	Convey("StringifySlackUser", t, func() {
+		Convey("Should return expected string version of a SlackUser object", func() {
+			var to types.SlackUser
+			to.ID = "UCRAY7US3R"
+			to.Profile.FirstName = "John"
+			to.Profile.LastName = "Doe"
+			to.Profile.Email = "john.doe@johndoe.com"
+			expected := "[ID=UCRAY7US3R, FirstName=John, LastName=Doe, Email=john.doe@johndoe.com]"
+			actual := StringifySlackUser(to)
+			So(actual, ShouldEqual, expected)
+		})
+		Convey("Should use default values", func() {
+			var to types.SlackUser
+			expected := "[ID=, FirstName=, LastName=, Email=]"
+			actual := StringifySlackUser(to)
+			So(actual, ShouldEqual, expected)
+		})
+	})
+}
+
+func TestStringifyADUser(t *testing.T) {
+	Convey("StringifyADUser", t, func() {
+		Convey("Should return expected string version of a SlackUser object", func() {
+			var to types.ADUser
+			to.LanID = "XYZ7"
+			to.FirstName = "John"
+			to.LastName = "Doe"
+			to.Email = "john.doe@johndoe.com"
+			expected := "[LanID=XYZ7, FirstName=John, LastName=Doe, Email=john.doe@johndoe.com]"
+			actual := StringifyADUser(to)
+			So(actual, ShouldEqual, expected)
+		})
+		Convey("Should use default values", func() {
+			var to types.ADUser
+			expected := "[LanID=, FirstName=, LastName=, Email=]"
+			actual := StringifyADUser(to)
+			So(actual, ShouldEqual, expected)
+		})
+	})
+}
+
+func TestGetBotReqType(t *testing.T) {
+	Convey("GetBotReqType should parse and return the type of request", t, func() {
+		msg := "@superbot !doSomethingAwesome foo arn:aws:iam::123456789012:role/superawesome-powerful-Role3 hydrogen"
+		expected := "!doSomethingAwesome"
+		actual := GetBotReqType(msg)
+		So(actual, ShouldResemble, expected)
+	})
+}
